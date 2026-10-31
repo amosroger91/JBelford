@@ -17,19 +17,19 @@ node dist/cli.js paper web                                                      
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `paper start [--config F] [--strategy ID] [--usd N] [--duration 30m] [--drill disconnect@10m:20s,duplicate@12m:5]` | New session on live public data. `--duration` bounds the *process*; the session stays resumable |
-| `paper resume ID [--duration] [--drill]` | Restart a runtime for an existing session (restart recovery), or resume a paused one |
-| `paper pause ID` / `paper stop ID` | Cancel open simulated orders and keep inventory. Recorded even when no runtime is attached |
-| `paper flatten ID` | Explicit simulated liquidation; only with a running session and healthy live data |
-| `paper status [ID]` / `paper sessions` | Balances, equity, fills, runtime attachment |
-| `paper replay ID` | Replay the session's recording into a separate database and compare canonical journal hashes |
-| `paper replay ID --participation 0.0001` | Counterfactual thin-liquidity stress on the recorded data (labelled; not a reproduction) |
-| `paper report ID [--output DIR]` | Replay check, readiness verdicts, and HTML/JSON/CSV export with an evidence manifest |
-| `paper research [--days 360]` | Historical screening on Coinbase 5m candles (simplified execution) plus optimization |
-| `paper web [--port 8787]` | Loopback dashboard with controls |
-| `paper mcp` | Opt-in MCP toolset (`paper_start/status/pause/resume/stop/report`) |
+| Command                                                                                                            | What it does                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `paper start [--config F] [--strategy ID] [--usd N] [--duration 30m] [--drill disconnect@10m:20s,duplicate@12m:5]` | New session on live public data. `--duration` bounds the _process_; the session stays resumable |
+| `paper resume ID [--duration] [--drill]`                                                                           | Restart a runtime for an existing session (restart recovery), or resume a paused one            |
+| `paper pause ID` / `paper stop ID`                                                                                 | Cancel open simulated orders and keep inventory. Recorded even when no runtime is attached      |
+| `paper flatten ID`                                                                                                 | Explicit simulated liquidation; only with a running session and healthy live data               |
+| `paper status [ID]` / `paper sessions`                                                                             | Balances, equity, fills, runtime attachment                                                     |
+| `paper replay ID`                                                                                                  | Replay the session's recording into a separate database and compare canonical journal hashes    |
+| `paper replay ID --participation 0.0001`                                                                           | Counterfactual thin-liquidity stress on the recorded data (labelled; not a reproduction)        |
+| `paper report ID [--output DIR]`                                                                                   | Replay check, readiness verdicts, and HTML/JSON/CSV export with an evidence manifest            |
+| `paper research [--days 360]`                                                                                      | Historical screening on Coinbase 5m candles (simplified execution) plus optimization            |
+| `paper web [--port 8787]`                                                                                          | Loopback dashboard with controls                                                                |
+| `paper mcp`                                                                                                        | Opt-in MCP toolset (`paper_start/status/pause/resume/stop/report`)                              |
 
 To enable the MCP toolset in Claude Code, add this to `.mcp.json` (opt-in):
 
@@ -39,12 +39,12 @@ To enable the MCP toolset in Claude Code, add this to `.mcp.json` (opt-in):
 
 ## Strategies (`strategy.id`)
 
-| ID | Kind | Notes |
-|---|---|---|
-| `cash`, `buyHold`, `matchedExposure` | controls | Buy-and-hold and matched-exposure are clamped to `risk.maxExposure` |
-| `smokeProbe` | infrastructure check | Alternates 5% long / flat every bar so orders occur. **Not a candidate** |
-| `emaTrend`, `donchianBreakout`, `rsiReversion`, `sessionMomentum` | deterministic candidates | Pure rules on completed 5-minute bars; exits after at most 12h |
-| `llm` | optional candidate | Claude API (`claude-opus-5-5`); needs `ANTHROPIC_API_KEY`; frozen model; output validated with Zod |
+| ID                                                                | Kind                     | Notes                                                                                              |
+| ----------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `cash`, `buyHold`, `matchedExposure`                              | controls                 | Buy-and-hold and matched-exposure are clamped to `risk.maxExposure`                                |
+| `smokeProbe`                                                      | infrastructure check     | Alternates 5% long / flat every bar so orders occur. **Not a candidate**                           |
+| `emaTrend`, `donchianBreakout`, `rsiReversion`, `sessionMomentum` | deterministic candidates | Pure rules on completed 5-minute bars; exits after at most 12h                                     |
+| `llm`                                                             | optional candidate       | Claude API (`claude-opus-5-5`); needs `ANTHROPIC_API_KEY`; frozen model; output validated with Zod |
 
 ## Assumptions (all frozen per session and printed in every report)
 
@@ -84,6 +84,7 @@ To enable the MCP toolset in Claude Code, add this to `.mcp.json` (opt-in):
    ```
 
    Every restart is disclosed as an observation gap; no fills are simulated while offline.
+
 3. **Report periodically:** `npm run test:acceptance` (attaches suite evidence), then
    `node dist/cli.js paper report SESSION_ID`.
 4. **Qualification** requires at least 60 days and 100 round trips of untouched forward observation,

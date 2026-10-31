@@ -283,6 +283,44 @@ async function main() {
       store.close();
       return;
     }
+    case 'history': {
+      const { loadCandles, loadBinanceUsCandles } = await import('../paper/research/historical');
+      if (positionals[0] === 'binanceus') {
+        console.log(`binance.us candles fetched: ${await loadBinanceUsCandles(Number(values.days ?? 360))}`);
+        return;
+      }
+      const c = await loadCandles(Number(values.days ?? 360), values.refresh);
+      console.log(
+        `cached ${c.length} completed Coinbase BTC-USD 5m candles ${new Date(c[0]!.start).toISOString()} .. ${new Date(c.at(-1)!.start).toISOString()}`,
+      );
+      return;
+    }
+    case 'bracket': {
+      const { runBracketBatch } = await import('../paper/research/bracket');
+      const cfg = loadConfig(values.config, {});
+      const batch = positionals[0] ?? 'batch-01';
+      const { out, dir } = runBracketBatch(cfg, { batch, outDir: resolveFromRoot(values.output ?? 'artifacts/research') });
+      console.log(
+        `BRACKET SCREENING batch ${batch}: ${out.trials} trials (${out.activeTrials} active, ${out.devPositiveTrials} positive on development) in ${out.seconds}s`,
+      );
+      console.log(`splits: dev ${out.splits.development} | validation ${out.splits.validation} | held-out ${out.splits.heldOut}`);
+      for (const f of out.perFamily) {
+        const pct = (x: number | undefined) => (x === undefined ? '—' : `${(x * 100).toFixed(2)}%`);
+        console.log(
+          `  ${f.family.padEnd(16)} trials ${String(f.trials).padStart(4)} devPositive ${String(f.devPositive).padStart(4)} | ` +
+            (f.pick
+              ? `pick dev ${pct(f.pick.dev.netReturn)} (${f.pick.dev.trades}t) val ${pct(f.pick.val.netReturn)} (${f.pick.val.trades}t) HELD-OUT ${pct(f.heldOut?.netReturn)} (${f.heldOut?.trades}t) stress ${pct(f.heldOutStress?.netReturn)} kraken ${pct(f.heldOutKraken?.netReturn)} ${f.passes ? 'PASS' : 'fail'}`
+              : 'no development winner survived validation'),
+        );
+      }
+      console.log(
+        `held-out controls: BTC buy-and-hold ${(out.controls.heldOutBtcBuyHold * 100).toFixed(2)}%, matched exposure ${(out.controls.heldOutMatchedExposure * 100).toFixed(2)}%`,
+      );
+      console.log(`multiple testing: ${JSON.stringify(out.multipleTesting)}`);
+      console.log(`any family passes the protocol: ${out.anyPass}`);
+      console.log(`saved ${dir}`);
+      return;
+    }
     case 'research': {
       const { runResearch } = await import('../paper/research/historical');
       const cfg = loadConfig(values.config, {});

@@ -10,6 +10,8 @@ const ALLOWED: { method: 'GET'; host: string; path: RegExp }[] = [
   { method: 'GET', host: 'api.coinbase.com', path: /^\/api\/v3\/brokerage\/market\/product_book$/ },
   { method: 'GET', host: 'api.coinbase.com', path: /^\/api\/v3\/brokerage\/market\/products\/BTC-USD\/ticker$/ },
   { method: 'GET', host: 'api.coinbase.com', path: /^\/api\/v3\/brokerage\/market\/products\/BTC-USD\/candles$/ },
+  // Binance.US public market data (research venue; no account endpoints)
+  { method: 'GET', host: 'api.binance.us', path: /^\/api\/v3\/(klines|depth|exchangeInfo|ticker\/24hr)$/ },
 ];
 
 export const PUBLIC_WS_URL = 'wss://advanced-trade-ws.coinbase.com';

@@ -206,7 +206,46 @@ export const GRIDS: Record<string, Params[]> = {
   ),
 };
 
-async function loadCandles(days: number, refresh: boolean): Promise<Candle[]> {
+/** Binance.US public 5m klines (1000 per request), completed buckets only, stored as exchange 'binanceus'. */
+export async function loadBinanceUsCandles(days: number, symbol = 'BTCUSD'): Promise<number> {
+  const { guardedGet } = await import('../market/netguard');
+  const store = new Store(openDb(resolveFromRoot('data/history.db')));
+  const now = Date.now();
+  const range = store.candleRange('binanceus', 'BTC-USD', '5m');
+  let start =
+    range.max !== null && range.min !== null && range.min <= now - days * 86_400_000 + 300_000
+      ? range.max + 300_000
+      : now - days * 86_400_000;
+  let n = 0;
+  while (start < now - 300_000) {
+    const rows = (await guardedGet(`https://api.binance.us/api/v3/klines?symbol=${symbol}&interval=5m&startTime=${start}&limit=1000`)) as (
+      string | number
+    )[][];
+    if (!rows.length) break;
+    const done = rows.filter((r) => (r[6] as number) < now);
+    store.upsertCandles(
+      'binanceus',
+      'BTC-USD',
+      '5m',
+      done.map((r) => ({
+        ts: r[0] as number,
+        open: Number(r[1]),
+        high: Number(r[2]),
+        low: Number(r[3]),
+        close: Number(r[4]),
+        volume: Number(r[5]),
+      })),
+    );
+    n += done.length;
+    start = (rows.at(-1)![0] as number) + 300_000;
+    process.stdout.write(`\r  binance.us: ${n} candles up to ${new Date(start).toISOString().slice(0, 10)}   `);
+  }
+  process.stdout.write('\n');
+  store.db.close();
+  return n;
+}
+
+export async function loadCandles(days: number, refresh: boolean): Promise<Candle[]> {
   const store = new Store(openDb(resolveFromRoot('data/history.db')));
   const now = Math.floor(Date.now() / 1000);
   const startSec = now - days * 86_400;
