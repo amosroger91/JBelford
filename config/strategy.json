@@ -1,0 +1,16 @@
+{
+  "emaFast1m": 9,
+  "rocBars": 3,
+  "minRocPct": 0.15,
+  "volLookback": 20,
+  "volMult": 1.5,
+  "trendEmaFast5m": 9,
+  "trendEmaSlow5m": 21,
+  "maxSpreadBps": 5,
+  "maxExtensionPct": 0.6,
+  "takeProfitPct": 1.0,
+  "stopLossPct": 0.5,
+  "maxHoldMinutes": 120,
+  "entryTimeoutSec": 60,
+  "minNetTargetPct": 0.05
+}

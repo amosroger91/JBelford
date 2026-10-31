@@ -1,0 +1,6 @@
+{
+  "author": "claude",
+  "createdAt": "2026-10-31T00:00:00Z",
+  "rationale": "Example only. Stricter momentum and volume filters ranked best in-sample, but they still lost money out-of-sample (see docs/EXCHANGE_VALIDATION.md).",
+  "changes": { "minRocPct": 0.25, "volMult": 2.5, "maxHoldMinutes": 180 }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "jbelford",
+  "version": "0.1.0",
+  "description": "Autonomous BTC/USD spot scalping research, backtesting and paper-trading system (paper by default).",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate:exchange": "node --disable-warning=ExperimentalWarning --import tsx src/cli/validateExchange.ts",
+    "history:fetch": "node --disable-warning=ExperimentalWarning --import tsx src/cli/fetchHistory.ts",
+    "backtest": "node --disable-warning=ExperimentalWarning --import tsx src/cli/backtest.ts",
+    "optimize": "node --disable-warning=ExperimentalWarning --import tsx src/cli/optimize.ts",
+    "paper": "node --disable-warning=ExperimentalWarning --import tsx src/cli/paper.ts",
+    "dashboard": "node --disable-warning=ExperimentalWarning --import tsx src/cli/dashboard.ts",
+    "kill": "node --disable-warning=ExperimentalWarning --import tsx src/cli/kill.ts",
+    "halt:status": "node --disable-warning=ExperimentalWarning --import tsx src/cli/halt.ts status",
+    "halt:reset": "node --disable-warning=ExperimentalWarning --import tsx src/cli/halt.ts reset",
+    "report": "node --disable-warning=ExperimentalWarning --import tsx src/cli/report.ts",
+    "proposal": "node --disable-warning=ExperimentalWarning --import tsx src/cli/proposal.ts",
+    "live:authorize": "node --disable-warning=ExperimentalWarning --import tsx src/cli/liveAuthorize.ts",
+    "live": "node --disable-warning=ExperimentalWarning --import tsx src/cli/live.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amosroger91/JBelford.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/amosroger91/JBelford/issues"
+  },
+  "homepage": "https://github.com/amosroger91/JBelford#readme",
+  "dependencies": {
+    "ccxt": "^4.5.91",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  }
+}

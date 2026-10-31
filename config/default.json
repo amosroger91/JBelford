@@ -1,0 +1,43 @@
+{
+  "exchange": {
+    "id": "kraken",
+    "symbol": "BTC/USD",
+    "fees": {
+      "maker": 0.004,
+      "taker": 0.008,
+      "source": "Kraken spot fee schedule, Tier 1 ($0+ 30-day volume), verified 2026-10-31 at https://www.kraken.com/features/fee-schedule"
+    },
+    "fallback": {
+      "minAmount": 0.00006,
+      "minCost": 0.5,
+      "amountStep": 1e-8,
+      "priceTick": 0.1
+    }
+  },
+  "marketData": {
+    "useWebSocket": true,
+    "pollIntervalMs": 3000,
+    "candlePollIntervalMs": 10000,
+    "bootstrapCandles": 720
+  },
+  "paper": {
+    "startingUsd": 50,
+    "takerSlippageBps": 5,
+    "faults": {
+      "ambiguousCreateRate": 0,
+      "rejectRate": 0
+    }
+  },
+  "backtest": {
+    "dataExchange": "bitstamp",
+    "spreadBps": 1,
+    "takerSlippageBps": 5,
+    "startingUsd": 50,
+    "inSampleFraction": 0.7
+  },
+  "paths": {
+    "stateDir": "state",
+    "dataDir": "data",
+    "reportsDir": "reports"
+  }
+}
