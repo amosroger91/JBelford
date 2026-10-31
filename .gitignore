@@ -1,7 +1,7 @@
 node_modules/
 # Runtime state: databases, kill flag, live authorization. Never commit.
-state/
-data/
+/state/
+/data/
 *.db
 *.db-wal
 *.db-shm
@@ -10,6 +10,6 @@ data/
 .env.*
 !.env.example
 # Generated output
-reports/
-coverage/
+/reports/
+/coverage/
 *.log
