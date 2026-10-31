@@ -12,16 +12,16 @@ npm run validate:exchange -- --exchanges kraken,coinbase,bitstamp,gemini
 There is **no official MCP server published by the CCXT maintainers** (github.com/ccxt/ccxt).
 Community servers built on CCXT:
 
-| Package | Repo | Latest | Notes |
-|---|---|---|---|
-| `@mcpfun/mcp-server-ccxt` | doggybee/mcp-server-ccxt | 1.2.1 (npm, Apr 2025) | Clear public/private tool split; public tools need no keys; keys via `.env` |
-| `@lazydino/ccxt-mcp` | lazy-dinosaur/ccxt-mcp | 0.4.1 (npm, Apr 2025) | Keys in a JSON config; includes futures/leverage tools; README encourages "use entire capital" prompts |
+| Package                   | Repo                     | Latest                | Notes                                                                                                  |
+| ------------------------- | ------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `@mcpfun/mcp-server-ccxt` | doggybee/mcp-server-ccxt | 1.2.1 (npm, Apr 2025) | Clear public/private tool split; public tools need no keys; keys via `.env`                            |
+| `@lazydino/ccxt-mcp`      | lazy-dinosaur/ccxt-mcp   | 0.4.1 (npm, Apr 2025) | Keys in a JSON config; includes futures/leverage tools; README encourages "use entire capital" prompts |
 
 Both are ~18 months old and unaudited. This project therefore:
 
-* uses `@mcpfun/mcp-server-ccxt@1.2.1` (pinned) in `.mcp.json` **for Claude's research and monitoring only**;
-* configures it **without any API keys** (public market data only);
-* never routes unattended trading through MCP: the deterministic engine in `src/` uses the CCXT library directly.
+- uses `@mcpfun/mcp-server-ccxt@1.2.1` (pinned) in `.mcp.json` **for Claude's research and monitoring only**;
+- configures it **without any API keys** (public market data only);
+- never routes unattended trading through MCP: the deterministic engine in `src/` uses the CCXT library directly.
 
 For account inspection at the live stage, create a separate **read-only key** (Kraken permission "Query Funds" + "Query Open/Closed Orders" only, no trading or withdrawal permission). See `docs/LIVE_ACTIVATION.md`.
 
@@ -29,12 +29,12 @@ For account inspection at the live stage, create a separate **read-only key** (K
 
 ## Exchange comparison (BTC/USD spot, ccxt 4.5.91)
 
-| Exchange | Min order | Price tick | Spread (observed) | WS book / trades / OHLCV | Fits $10 cap? |
-|---|---|---|---|---|---|
-| **Kraken** (selected) | 0.00006 BTC (≈ $4.63), cost ≥ $0.50 | $0.10 | ~0.01 bps | ✅ / ✅ / ✅ | ✅ |
-| Coinbase Advanced | $1.00 | $0.01 | ~0.001 bps | ✅ / ✅ / ❌ | ✅ |
-| Bitstamp | **$10.00** | $0.01 | ~0.001 bps | ✅ / ✅ / ❌ | ❌ (minimum = cap) |
-| Gemini | not reported by ccxt | – | ~0.001 bps | ✅ / ✅ / ✅ | ? |
+| Exchange              | Min order                           | Price tick | Spread (observed) | WS book / trades / OHLCV | Fits $10 cap?      |
+| --------------------- | ----------------------------------- | ---------- | ----------------- | ------------------------ | ------------------ |
+| **Kraken** (selected) | 0.00006 BTC (≈ $4.63), cost ≥ $0.50 | $0.10      | ~0.01 bps         | ✅ / ✅ / ✅             | ✅                 |
+| Coinbase Advanced     | $1.00                               | $0.01      | ~0.001 bps        | ✅ / ✅ / ❌             | ✅                 |
+| Bitstamp              | **$10.00**                          | $0.01      | ~0.001 bps        | ✅ / ✅ / ❌             | ❌ (minimum = cap) |
+| Gemini                | not reported by ccxt                | –          | ~0.001 bps        | ✅ / ✅ / ✅             | ?                  |
 
 Why Kraken: US-accessible spot BTC/USD, minimum well under the $10 cap, full WebSocket support in
 ccxt.pro, post-only orders (`oflags=post`) and client order ids (`cl_ord_id`, accepts a UUID) both
@@ -42,12 +42,12 @@ supported by ccxt's Kraken implementation, which the duplicate-order protection 
 
 ## Fees: verified against the official schedule
 
-| Source | Maker | Taker |
-|---|---|---|
-| Kraken official fee page, Tier 1 ($0+ 30-day volume) | **0.40%** | **0.80%** |
-| Kraken Tier 2 ($2.5K+) | 0.30% | 0.60% |
-| Kraken Tier 3 ($10K+ or $20K assets on platform) | 0.22% | 0.38% |
-| ccxt's built-in Kraken table (**stale**) | 0.16% | 0.26% |
+| Source                                                                     | Maker       | Taker       |
+| -------------------------------------------------------------------------- | ----------- | ----------- |
+| Kraken official fee page, Tier 1 ($0+ 30-day volume)                       | **0.40%**   | **0.80%**   |
+| Kraken Tier 2 ($2.5K+)                                                     | 0.30%       | 0.60%       |
+| Kraken Tier 3 ($10K+ or $20K assets on platform)                           | 0.22%       | 0.38%       |
+| ccxt's built-in Kraken table (**stale**)                                   | 0.16%       | 0.26%       |
 | Coinbase Advanced (third-party reports; not verified on the official page) | ~0.50–0.60% | ~0.90–1.20% |
 
 `config/default.json` uses the verified Kraken Tier-1 values. **ccxt's static fee table is out of
@@ -59,11 +59,11 @@ A $25–$50 account trading $10 orders will stay in Tier 1 indefinitely (10 trad
 
 ## What the fees mean for the specified strategy
 
-| | Per trade, % of notional |
-|---|---|
-| 1% target, maker in + maker out | **+0.196%** net |
-| 0.5% stop, maker in + taker out + spread + 5 bps slippage | **−1.751%** net |
-| Win rate needed to break even | **89.9%** |
+|                                                           | Per trade, % of notional |
+| --------------------------------------------------------- | ------------------------ |
+| 1% target, maker in + maker out                           | **+0.196%** net          |
+| 0.5% stop, maker in + taker out + spread + 5 bps slippage | **−1.751%** net          |
+| Win rate needed to break even                             | **89.9%**                |
 
 On a $9.80 position: a win nets about **$0.019**, a loss costs about **$0.17**. Nine wins are erased by one loss.
 
@@ -71,7 +71,7 @@ On a $9.80 position: a win nets about **$0.019**, a loss costs about **$0.17**. 
 
 Kraken's REST API serves only the last 720 one-minute bars, so history comes from Bitstamp (deep 1m
 history, prices within a few dollars of Kraken). Data: 64,799 bars, 2026-09-16 → 2026-10-31.
-Fill model: maker entries fill only when price trades *through* the bid; stop beats target in the
+Fill model: maker entries fill only when price trades _through_ the bid; stop beats target in the
 same bar; taker exits pay spread plus slippage.
 
 **Baseline (1% / 0.5%, config/strategy.json):** 91 trades, 6.6% win rate, gross −$1.23, fees $10.45,
@@ -83,23 +83,23 @@ trades. Walk-forward total: **−$3.05 over 27 trades**.
 
 **Overfitting diagnostics (108 trials that traded ≥ 8 times, daily P&L, CSCV with 8 blocks / 70 splits):**
 
-| Metric | Value | Meaning |
-|---|---|---|
-| Probability of Backtest Overfitting | 0% | Ranking is stable: the least-bad combo in-sample stays least-bad out-of-sample |
-| In-sample winner lost money out-of-sample | 100% of splits | ...but even the best combo loses on unseen data |
-| Best Sharpe (per day) | −0.81 | vs. +0.73 expected from luck alone across 108 trials |
-| Deflated Sharpe Ratio | 0% | Want > 95% before believing an edge exists |
+| Metric                                    | Value          | Meaning                                                                        |
+| ----------------------------------------- | -------------- | ------------------------------------------------------------------------------ |
+| Probability of Backtest Overfitting       | 0%             | Ranking is stable: the least-bad combo in-sample stays least-bad out-of-sample |
+| In-sample winner lost money out-of-sample | 100% of splits | ...but even the best combo loses on unseen data                                |
+| Best Sharpe (per day)                     | −0.81          | vs. +0.73 expected from luck alone across 108 trials                           |
+| Deflated Sharpe Ratio                     | 0%             | Want > 95% before believing an edge exists                                     |
 
-Low PBO is not a green light. It measures whether *selection* generalizes, not whether the selected
+Low PBO is not a green light. It measures whether _selection_ generalizes, not whether the selected
 strategy makes money. Read it alongside the out-of-sample loss rate and the DSR.
 
 **v0.3 intraday strategies, promotion gate (`npm run gate`):**
 
-| Strategy | Trades | Avg hold | Net | Gross | Walk-forward | Random-entry p | Gate |
-|---|---|---|---|---|---|---|---|
-| momentum (1m, 5m trend) | 91 | 89 min | −$11.68 | −$1.23 | −$3.28 / 28 trades | 0.86 | FAIL |
-| vwapReversion | 7 | 207 min | −$1.05 | −$0.23 | −$1.40 / 12 trades | 0.79 | FAIL |
-| volBreakout (15m squeeze) | 29 | 185 min | −$3.30 | +$0.03 | −$1.32 / 10 trades | 0.36 | FAIL |
+| Strategy                  | Trades | Avg hold | Net     | Gross  | Walk-forward       | Random-entry p | Gate |
+| ------------------------- | ------ | -------- | ------- | ------ | ------------------ | -------------- | ---- |
+| momentum (1m, 5m trend)   | 91     | 89 min   | −$11.68 | −$1.23 | −$3.28 / 28 trades | 0.86           | FAIL |
+| vwapReversion             | 7      | 207 min  | −$1.05  | −$0.23 | −$1.40 / 12 trades | 0.79           | FAIL |
+| volBreakout (15m squeeze) | 29     | 185 min  | −$3.30  | +$0.03 | −$1.32 / 10 trades | 0.36           | FAIL |
 
 The random-entry test is the most telling: entering at random bars with each strategy's own exits
 loses about **$0.12 per trade**, roughly the round-trip fee cost on a $9.80 order. None of the

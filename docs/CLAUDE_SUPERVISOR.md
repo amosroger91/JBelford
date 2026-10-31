@@ -2,13 +2,13 @@
 
 Claude **advises**. The deterministic engine **executes**. The risk engine **decides** what is allowed.
 
-| Claude may | Claude may not |
-|---|---|
-| Research markets via the CCXT MCP server and `npm run context` (public data) | Place, cancel or modify orders |
-| Read `npm run report` output, backtest and optimizer reports | Change risk limits (they are compiled constants) |
+| Claude may                                                                            | Claude may not                                                              |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Research markets via the CCXT MCP server and `npm run context` (public data)          | Place, cancel or modify orders                                              |
+| Read `npm run report` output, backtest and optimizer reports                          | Change risk limits (they are compiled constants)                            |
 | Run backtests / optimizer / `npm run gate` / `proposal validate` / `proposal compare` | Apply proposals (`proposal apply` needs a human at an interactive terminal) |
-| Write proposal files in `proposals/` | Activate live trading, create authorizations, or handle credentials |
-| | Reset halts or clear the kill switch (interactive only) |
+| Write proposal files in `proposals/`                                                  | Activate live trading, create authorizations, or handle credentials         |
+|                                                                                       | Reset halts or clear the kill switch (interactive only)                     |
 
 ## Proposal format
 

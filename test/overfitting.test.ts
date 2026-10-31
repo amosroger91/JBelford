@@ -48,7 +48,11 @@ describe('periodReturns', () => {
   it('buckets trade P&L by close time and fills empty periods with 0', () => {
     const day = 86_400_000;
     const r = periodReturns(
-      [trade({ netPnl: 0.1, closedAt: T0 + 1000 }), trade({ netPnl: -0.3, closedAt: T0 + 2000 }), trade({ netPnl: 0.2, closedAt: T0 + 2 * day + 5 })],
+      [
+        trade({ netPnl: 0.1, closedAt: T0 + 1000 }),
+        trade({ netPnl: -0.3, closedAt: T0 + 2000 }),
+        trade({ netPnl: 0.2, closedAt: T0 + 2 * day + 5 }),
+      ],
       T0,
       T0 + 3 * day,
       day,
@@ -66,7 +70,10 @@ describe('probability of backtest overfitting (CSCV)', () => {
   });
 
   it('is near 0 when one trial has a genuine, persistent edge', () => {
-    const r = probabilityOfBacktestOverfitting(noiseMatrix(200, 50, 12, (n) => (n === 7 ? 0.5 : 0)), 8);
+    const r = probabilityOfBacktestOverfitting(
+      noiseMatrix(200, 50, 12, (n) => (n === 7 ? 0.5 : 0)),
+      8,
+    );
     expect(r.pbo).toBeLessThan(0.05);
     expect(r.probOosLoss).toBeLessThan(0.05);
   });

@@ -1,13 +1,6 @@
 import type { DB } from './db';
 import { inTransaction } from './db';
-import type {
-  Balance,
-  Candle,
-  LocalOrderStatus,
-  OrderRecord,
-  PositionRecord,
-  TradeRecord,
-} from '../core/types';
+import type { Balance, Candle, LocalOrderStatus, OrderRecord, PositionRecord, TradeRecord } from '../core/types';
 
 type Row = Record<string, unknown>;
 
@@ -136,16 +129,12 @@ export class Store {
 
   openOrders(): OrderRecord[] {
     return (
-      this.db
-        .prepare(`SELECT * FROM orders WHERE status IN ('pending_submit','open','unknown') ORDER BY created_at`)
-        .all() as Row[]
+      this.db.prepare(`SELECT * FROM orders WHERE status IN ('pending_submit','open','unknown') ORDER BY created_at`).all() as Row[]
     ).map(toOrder);
   }
 
   ordersForTrade(tradeId: string): OrderRecord[] {
-    return (this.db.prepare('SELECT * FROM orders WHERE trade_id = ? ORDER BY created_at').all(tradeId) as Row[]).map(
-      toOrder,
-    );
+    return (this.db.prepare('SELECT * FROM orders WHERE trade_id = ? ORDER BY created_at').all(tradeId) as Row[]).map(toOrder);
   }
 
   recentOrders(limit = 20): OrderRecord[] {
@@ -235,7 +224,13 @@ export class Store {
   latestBalance(): { ts: number; usd: number; btc: number; markPrice: number; equity: number } | undefined {
     const r = this.db.prepare('SELECT * FROM balances ORDER BY id DESC LIMIT 1').get() as Row | undefined;
     if (!r) return undefined;
-    return { ts: r.ts as number, usd: r.usd as number, btc: r.btc as number, markPrice: r.mark_price as number, equity: r.equity as number };
+    return {
+      ts: r.ts as number,
+      usd: r.usd as number,
+      btc: r.btc as number,
+      markPrice: r.mark_price as number,
+      equity: r.equity as number,
+    };
   }
 
   firstBalance(): { ts: number; equity: number } | undefined {
@@ -265,8 +260,7 @@ export class Store {
 
   latestContext<T>(source: string): { ts: number; payload: T } | undefined {
     const r = this.db.prepare('SELECT ts, payload FROM context_snapshots WHERE source = ? ORDER BY id DESC LIMIT 1').get(source) as
-      | { ts: number; payload: string }
-      | undefined;
+      { ts: number; payload: string } | undefined;
     return r ? { ts: r.ts, payload: JSON.parse(r.payload) as T } : undefined;
   }
 

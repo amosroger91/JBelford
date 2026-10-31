@@ -13,9 +13,15 @@ async function main() {
   const store = openHistoryStore(dataDir);
   const svc = new MarketContextService(store, cfg.marketContext);
   const results = await Promise.allSettled([svc.pollExchanges(), svc.pollPaprika(), svc.pollFearGreed()]);
-  const errors = results.flatMap((r, i) => (r.status === 'rejected' ? [`${['exchanges', 'coinpaprika', 'fearGreed'][i]}: ${String(r.reason)}`] : []));
+  const errors = results.flatMap((r, i) =>
+    r.status === 'rejected' ? [`${['exchanges', 'coinpaprika', 'fearGreed'][i]}: ${String(r.reason)}`] : [],
+  );
 
-  const [kt, kTrades, bTrades] = await Promise.allSettled([krakenTicker(), krakenTrades(100), binanceTrades(cfg.marketContext.binanceBaseUrl, 'BTCUSD', 100)]);
+  const [kt, kTrades, bTrades] = await Promise.allSettled([
+    krakenTicker(),
+    krakenTrades(100),
+    binanceTrades(cfg.marketContext.binanceBaseUrl, 'BTCUSD', 100),
+  ]);
   const flow = (t: PromiseSettledResult<{ qty: number; side: 'buy' | 'sell' }[]>) => {
     if (t.status !== 'fulfilled' || t.value.length === 0) return null;
     const buy = t.value.filter((x) => x.side === 'buy').reduce((s, x) => s + x.qty, 0);
@@ -29,11 +35,19 @@ async function main() {
     kraken: kt.status === 'fulfilled' ? kt.value : null,
     references: s.refs,
     divergence: Number.isFinite(mid)
-      ? divergenceVeto(mid, s.refs.filter((r) => r.source !== 'kraken-rest'), Date.now(), cfg.marketContext.maxDivergenceBps, cfg.marketContext.maxReferenceAgeMs)
+      ? divergenceVeto(
+          mid,
+          s.refs.filter((r) => r.source !== 'kraken-rest'),
+          Date.now(),
+          cfg.marketContext.maxDivergenceBps,
+          cfg.marketContext.maxReferenceAgeMs,
+        )
       : null,
     recentTradeFlow: { kraken: flow(kTrades), binanceUs: flow(bTrades) },
     coinpaprika: s.paprika,
-    btcMarkets: s.markets ? { listed: s.markets.count, topByVolume: s.markets.top.slice(0, 8).map((m) => `${m.exchange} ${m.pair} $${m.priceUsd.toFixed(0)}`) } : null,
+    btcMarkets: s.markets
+      ? { listed: s.markets.count, topByVolume: s.markets.top.slice(0, 8).map((m) => `${m.exchange} ${m.pair} $${m.priceUsd.toFixed(0)}`) }
+      : null,
     fearGreed: s.fearGreed ? { ...s.fearGreed, date: new Date(s.fearGreed.ts).toISOString().slice(0, 10) } : null,
     errors,
   };

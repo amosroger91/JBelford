@@ -26,7 +26,9 @@ async function main() {
     },
   });
   const r = store.candleRange(exchangeId, cfg.exchange.symbol, '1m');
-  console.log(`Fetched ${n} new bars. Cache: ${r.n} bars ${r.min ? new Date(r.min).toISOString() : '-'} .. ${r.max ? new Date(r.max).toISOString() : '-'}`);
+  console.log(
+    `Fetched ${n} new bars. Cache: ${r.n} bars ${r.min ? new Date(r.min).toISOString() : '-'} .. ${r.max ? new Date(r.max).toISOString() : '-'}`,
+  );
   store.db.close();
 }
 

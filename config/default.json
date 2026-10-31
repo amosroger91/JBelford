@@ -8,9 +8,9 @@
       "source": "Kraken spot fee schedule, Tier 1 ($0+ 30-day volume), verified 2026-10-31 at https://www.kraken.com/features/fee-schedule"
     },
     "fallback": {
-      "minAmount": 6e-05,
+      "minAmount": 6e-5,
       "minCost": 0.5,
-      "amountStep": 1e-08,
+      "amountStep": 1e-8,
       "priceTick": 0.1
     }
   },

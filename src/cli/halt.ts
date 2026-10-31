@@ -21,7 +21,9 @@ async function main() {
     const risk = new RiskEngine(store);
     const h = risk.activeHalt(now);
     const s = risk.dailyStats(now);
-    console.log(`[${mode}] halt: ${h ? `${h.kind} - ${h.reason}` : 'none'} | today trades ${s.tradesToday}, realized $${s.realizedTodayUsd.toFixed(4)}, loss streak ${s.consecutiveLosses}`);
+    console.log(
+      `[${mode}] halt: ${h ? `${h.kind} - ${h.reason}` : 'none'} | today trades ${s.tradesToday}, realized $${s.realizedTodayUsd.toFixed(4)}, loss streak ${s.consecutiveLosses}`,
+    );
     store.db.close();
   }
   if (cmd !== 'reset') return;

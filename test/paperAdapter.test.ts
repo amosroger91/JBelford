@@ -13,9 +13,9 @@ describe('PaperAdapter', () => {
   it('rejects post-only orders that would take liquidity', async () => {
     const { p } = make();
     p.onBook({ bid: 77000, ask: 77000.1, ts: T0 });
-    await expect(p.createLimitOrder({ clientOrderId: 'a', side: 'buy', amount: 0.0001, price: 77000.1, postOnly: true })).rejects.toBeInstanceOf(
-      OrderRejectedError,
-    );
+    await expect(
+      p.createLimitOrder({ clientOrderId: 'a', side: 'buy', amount: 0.0001, price: 77000.1, postOnly: true }),
+    ).rejects.toBeInstanceOf(OrderRejectedError);
   });
 
   it('does not fill a resting bid when price only touches it', async () => {
@@ -63,9 +63,15 @@ describe('PaperAdapter', () => {
     const { p } = make();
     p.onBook({ bid: 77000, ask: 77000.1, ts: T0 });
     await p.createLimitOrder({ clientOrderId: 'a', side: 'buy', amount: 0.0001, price: 77000, postOnly: true });
-    await expect(p.createLimitOrder({ clientOrderId: 'a', side: 'buy', amount: 0.0001, price: 77000, postOnly: true })).rejects.toThrow(/duplicate/);
-    await expect(p.createLimitOrder({ clientOrderId: 'b', side: 'buy', amount: 0.01, price: 77000, postOnly: true })).rejects.toThrow(/insufficient/);
-    await expect(p.createLimitOrder({ clientOrderId: 'c', side: 'buy', amount: 0.00001, price: 77000, postOnly: true })).rejects.toThrow(/minimum/);
+    await expect(p.createLimitOrder({ clientOrderId: 'a', side: 'buy', amount: 0.0001, price: 77000, postOnly: true })).rejects.toThrow(
+      /duplicate/,
+    );
+    await expect(p.createLimitOrder({ clientOrderId: 'b', side: 'buy', amount: 0.01, price: 77000, postOnly: true })).rejects.toThrow(
+      /insufficient/,
+    );
+    await expect(p.createLimitOrder({ clientOrderId: 'c', side: 'buy', amount: 0.00001, price: 77000, postOnly: true })).rejects.toThrow(
+      /minimum/,
+    );
     await expect(p.createMarketOrder({ clientOrderId: 'd', side: 'sell', amount: 0.0001 })).rejects.toThrow(/insufficient BTC/);
   });
 
@@ -85,9 +91,9 @@ describe('PaperAdapter', () => {
     p.onBook({ bid: 77000, ask: 77000.1, ts: T0 });
     let created = 0;
     for (let i = 0; i < 10; i++) {
-      await expect(p.createLimitOrder({ clientOrderId: `id${i}`, side: 'buy', amount: 0.00006, price: 70000, postOnly: true })).rejects.toBeInstanceOf(
-        AmbiguousOrderError,
-      );
+      await expect(
+        p.createLimitOrder({ clientOrderId: `id${i}`, side: 'buy', amount: 0.00006, price: 70000, postOnly: true }),
+      ).rejects.toBeInstanceOf(AmbiguousOrderError);
       if (await p.fetchOrderByClientId(`id${i}`)) created++;
     }
     expect(created).toBeGreaterThan(0);

@@ -65,7 +65,11 @@ export interface OptimizeResult {
   combos: number;
   ranked: { params: Params; inSample: Summary; outOfSample: Summary }[];
   baseline: { inSample: Summary; outOfSample: Summary };
-  walkForward: { folds: { trainEnd: number; testEnd: number; chosen: Params | null; test: Summary | null }[]; totalNet: number; totalTrades: number };
+  walkForward: {
+    folds: { trainEnd: number; testEnd: number; chosen: Params | null; test: Summary | null }[];
+    totalNet: number;
+    totalTrades: number;
+  };
   overfitting: {
     periodHours: number;
     trialsUsed: number;
@@ -153,5 +157,13 @@ export function optimize(
     overfitting.error = String(e);
   }
 
-  return { strategy: name, splitTs: candles[split]?.ts ?? 0, combos: combos.length, ranked, baseline, walkForward: { folds, totalNet, totalTrades }, overfitting };
+  return {
+    strategy: name,
+    splitTs: candles[split]?.ts ?? 0,
+    combos: combos.length,
+    ranked,
+    baseline,
+    walkForward: { folds, totalNet, totalTrades },
+    overfitting,
+  };
 }

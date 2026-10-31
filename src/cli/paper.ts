@@ -40,7 +40,8 @@ async function main() {
     log.error('after investigating, clear it with: npm run halt:reset');
     process.exit(1);
   }
-  if (values.strategy && !STRATEGY_NAMES.includes(values.strategy as StrategyName)) throw new Error(`--strategy must be one of ${STRATEGY_NAMES.join(', ')}`);
+  if (values.strategy && !STRATEGY_NAMES.includes(values.strategy as StrategyName))
+    throw new Error(`--strategy must be one of ${STRATEGY_NAMES.join(', ')}`);
   const strategy = activeStrategy(loadStrategyConfig(), cfg.exchange.fees, values.strategy as StrategyName | undefined);
   const store = openModeStore(stateDir, 'paper');
   const feed = new MarketDataFeed({

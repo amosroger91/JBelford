@@ -24,7 +24,6 @@ const { values } = parseArgs({
   },
 });
 
-
 setQuiet(true); // simulated halts would otherwise flood the console
 const { cfg, dataDir, reportsDir } = appContext();
 const sc = loadStrategyConfig();
@@ -57,7 +56,9 @@ const fmt = (s: Summary) => ({
   dd: Number(s.maxDrawdownUsd.toFixed(3)),
   fill: Number(s.fillRate.toFixed(2)),
 });
-console.log(`Strategy ${name}: ${candles.length} bars, ${res.combos} combos, split at ${new Date(res.splitTs).toISOString()} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+console.log(
+  `Strategy ${name}: ${candles.length} bars, ${res.combos} combos, split at ${new Date(res.splitTs).toISOString()} (${((Date.now() - t0) / 1000).toFixed(1)}s)`,
+);
 /** Compact label of the parameters the grid varies. */
 const describe = (p: Record<string, unknown>) =>
   Object.keys(GRID)
@@ -106,9 +107,13 @@ if (of.dsr) {
     `  Best full-sample Sharpe: ${of.dsr.sharpe.toFixed(3)}/period (${describe(p)}); ` +
       `luck benchmark for ${of.dsr.trials} trials: ${of.dsr.benchmarkSharpe.toFixed(3)}`,
   );
-  console.log(`  Probabilistic Sharpe P(SR>0): ${(of.dsr.psr * 100).toFixed(1)}%   Deflated Sharpe: ${(of.dsr.dsr * 100).toFixed(1)}%  (want > 95%)`);
+  console.log(
+    `  Probabilistic Sharpe P(SR>0): ${(of.dsr.psr * 100).toFixed(1)}%   Deflated Sharpe: ${(of.dsr.dsr * 100).toFixed(1)}%  (want > 95%)`,
+  );
 }
-console.log('\nIn-sample rank is NOT evidence of an edge. Judge by out-of-sample and walk-forward results, and even those do not guarantee live profitability.');
+console.log(
+  '\nIn-sample rank is NOT evidence of an edge. Judge by out-of-sample and walk-forward results, and even those do not guarantee live profitability.',
+);
 const path = join(reportsDir, `optimize-${name}-${Date.now()}.json`);
 writeFileSync(path, JSON.stringify({ grid: GRID, ...res }, null, 2));
 console.log(`Saved ${path}`);

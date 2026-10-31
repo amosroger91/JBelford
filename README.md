@@ -33,13 +33,14 @@ behind six independent gates and is switched off in this build (see
 > **No strategy has a demonstrated edge yet.** Every strategy fails the promotion gate on 45 days of
 > 1-minute data at Kraken's verified Tier-1 fees (0.40% maker / 0.80% taker).
 
-| Strategy | Style | Trades | Avg hold | Net (on $50) | Gross (pre-fee) | Beats random entries? | Gate |
-|---|---|---|---|---|---|---|---|
-| `momentum` | 1m momentum + 5m trend | 91 | 89 min | −$11.68 | −$1.23 | No (p = 0.86) | ❌ FAIL |
-| `vwapReversion` | Fade stretched sell-offs below VWAP | 7 | 207 min | −$1.05 | −$0.23 | No (p = 0.79) | ❌ FAIL |
-| `volBreakout` | 15m squeeze breakout | 29 | 185 min | −$3.30 | +$0.03 | No (p = 0.36) | ❌ FAIL |
+| Strategy        | Style                               | Trades | Avg hold | Net (on $50) | Gross (pre-fee) | Beats random entries? | Gate    |
+| --------------- | ----------------------------------- | ------ | -------- | ------------ | --------------- | --------------------- | ------- |
+| `momentum`      | 1m momentum + 5m trend              | 91     | 89 min   | −$11.68      | −$1.23          | No (p = 0.86)         | ❌ FAIL |
+| `vwapReversion` | Fade stretched sell-offs below VWAP | 7      | 207 min  | −$1.05       | −$0.23          | No (p = 0.79)         | ❌ FAIL |
+| `volBreakout`   | 15m squeeze breakout                | 29     | 185 min  | −$3.30       | +$0.03          | No (p = 0.36)         | ❌ FAIL |
 
 What the numbers say:
+
 - **Fees dominate.** Entering at random times with the same exits loses about **$0.12 per trade**,
   roughly the round-trip fee on a $9.80 order. A 1% target nets only +0.196% after maker fees, and a
   0.5% stop costs −1.75%, so the original 1% / 0.5% setup needs a ~90% win rate to break even.
@@ -52,6 +53,7 @@ Full research: [`docs/EXCHANGE_VALIDATION.md`](docs/EXCHANGE_VALIDATION.md) ·
 ## Features
 
 ### Intraday strategies (pluggable)
+
 - **Three built-in strategies**, chosen with `active` in [`config/strategy.json`](config/strategy.json):
   - **`momentum`:** 1-minute momentum with 5-minute trend confirmation, volume, spread and
     over-extension filters.
@@ -66,11 +68,12 @@ Full research: [`docs/EXCHANGE_VALIDATION.md`](docs/EXCHANGE_VALIDATION.md) ·
 - **Intraday by construction:** the config schema rejects any max hold over 720 minutes.
 - **Net-of-fee check:** no entry unless the target still clears `minNetTargetPct` after maker fees on
   both sides.
-- Every strategy is tested for look-ahead: a signal at bar *i* must not change when later bars are added.
+- Every strategy is tested for look-ahead: a signal at bar _i_ must not change when later bars are added.
 
 ### Validation pipeline
+
 - **Backtester:** uses the same strategy code, risk engine and fill model as paper trading.
-  - Maker orders fill only when price trades *through* them, which models non-fills and adverse
+  - Maker orders fill only when price trades _through_ them, which models non-fills and adverse
     selection.
   - If a stop and a target are both touched in one bar, the stop is assumed to hit first.
   - Taker exits pay spread, slippage and taker fees.
@@ -87,13 +90,14 @@ Full research: [`docs/EXCHANGE_VALIDATION.md`](docs/EXCHANGE_VALIDATION.md) ·
   authorization requires a recent PASS for the exact strategy config.
 
 ### Execution and safety
+
 - **Deterministic engine:** FLAT → post-only bid → LONG with a resting post-only take-profit, plus an
   engine-side stop and max hold → FLAT.
 - **Independent risk engine:** hard limits are compiled constants. They're not read from config, env
   vars, CLI flags or proposals.
 - **Order guard (`GuardedAdapter`):** a second check on every order. It blocks market buys, selling
   BTC you don't hold, orders over $10, symbols other than BTC/USD, and any buy while halted.
-- **Duplicate prevention:** each order gets a UUID client order id, saved *before* sending (Kraken `cl_ord_id`).
+- **Duplicate prevention:** each order gets a UUID client order id, saved _before_ sending (Kraken `cl_ord_id`).
 - **Reconciliation:** runs at startup, after errors and after any ambiguous exchange response.
   - Orders are matched by client id.
   - Unrecognized orders on the exchange trigger a halt.
@@ -106,6 +110,7 @@ Full research: [`docs/EXCHANGE_VALIDATION.md`](docs/EXCHANGE_VALIDATION.md) ·
   stage, and a log redactor scrubs credential-like fields and registered secret values.
 
 ### Market data and context
+
 - **Exchange feed:** ccxt.pro WebSocket order book and trades, with automatic REST polling fallback.
   - Data older than 15s blocks new entries.
   - Data stale for 5 minutes halts trading.
@@ -120,6 +125,7 @@ Full research: [`docs/EXCHANGE_VALIDATION.md`](docs/EXCHANGE_VALIDATION.md) ·
   backtested later.
 
 ### Claude as strategy supervisor
+
 - **Research:** Claude uses the CCXT MCP server ([`.mcp.json`](.mcp.json), keyless) and
   `npm run context`.
 - **Proposals:** Claude writes `proposals/*.json` that change one strategy's parameters, or propose
@@ -128,6 +134,7 @@ Full research: [`docs/EXCHANGE_VALIDATION.md`](docs/EXCHANGE_VALIDATION.md) ·
   typing a phrase in an interactive terminal, which automated tools can't do.
 
 ### Monitoring
+
 - **Terminal dashboard:** balance, equity, open position, trade history, net P&L, fees, risk
   counters, data freshness, halts and recent events.
 - **`npm run report`:** a JSON status report for Claude and for humans.
@@ -169,32 +176,32 @@ idea → backtest → optimize (out-of-sample + walk-forward) → gate (PBO, DSR
 
 Defined in [`src/risk/limits.ts`](src/risk/limits.ts). These are compiled constants: not configurable, and not proposable.
 
-| Limit | Value |
-|---|---|
-| Market | BTC/USD spot only. No leverage, margin, borrowing or derivatives |
-| Open positions | 1 |
-| Max order value | $10 (subject to exchange minimums) |
-| Max daily loss | $1, realized plus unrealized; open position is flattened |
-| Consecutive losses | 3 → shutdown until a human resets it |
-| Completed trades | 10 per UTC day |
-| Cooldown between trades | 5 minutes |
-| Stale data | 15s blocks entries; 5 minutes halts |
-| Uncertain exchange state | No new orders until reconciled |
+| Limit                    | Value                                                            |
+| ------------------------ | ---------------------------------------------------------------- |
+| Market                   | BTC/USD spot only. No leverage, margin, borrowing or derivatives |
+| Open positions           | 1                                                                |
+| Max order value          | $10 (subject to exchange minimums)                               |
+| Max daily loss           | $1, realized plus unrealized; open position is flattened         |
+| Consecutive losses       | 3 → shutdown until a human resets it                             |
+| Completed trades         | 10 per UTC day                                                   |
+| Cooldown between trades  | 5 minutes                                                        |
+| Stale data               | 15s blocks entries; 5 minutes halts                              |
+| Uncertain exchange state | No new orders until reconciled                                   |
 
 ## Promotion gate criteria
 
 Defined in [`src/backtest/gate.ts`](src/backtest/gate.ts). Also compiled constants.
 
-| Check | Required |
-|---|---|
-| Walk-forward net P&L | > 0 |
-| Walk-forward trades | ≥ 30 |
-| Out-of-sample net (current params) | > 0 |
-| Average net per trade (full sample) | > 0 |
-| Profit factor (full sample) | ≥ 1.1 |
-| Deflated Sharpe Ratio (whole grid) | ≥ 95% |
-| Probability of Backtest Overfitting | ≤ 50% |
-| Random-entry p-value | ≤ 0.05 |
+| Check                               | Required                             |
+| ----------------------------------- | ------------------------------------ |
+| Walk-forward net P&L                | > 0                                  |
+| Walk-forward trades                 | ≥ 30                                 |
+| Out-of-sample net (current params)  | > 0                                  |
+| Average net per trade (full sample) | > 0                                  |
+| Profit factor (full sample)         | ≥ 1.1                                |
+| Deflated Sharpe Ratio (whole grid)  | ≥ 95%                                |
+| Probability of Backtest Overfitting | ≤ 50%                                |
+| Random-entry p-value                | ≤ 0.05                               |
 | Result age (for live authorization) | ≤ 14 days, same strategy config hash |
 
 ## Quick start (Windows PowerShell)
@@ -216,32 +223,32 @@ Full guide: [`docs/WINDOWS_SETUP.md`](docs/WINDOWS_SETUP.md).
 
 ## Commands
 
-| Command | Purpose |
-|---|---|
-| `npm run validate:exchange [-- --exchanges a,b]` | Market minimums, precision, WebSocket support, spread, fee economics (public API) |
-| `npm run history:fetch -- --days N` | Cache 1m candles in `data/history.db` (Bitstamp by default; Kraken serves only 12h) |
-| `npm run backtest [-- --strategy X --days N]` | Backtest one strategy |
-| `npm run optimize [-- --strategy X]` | Grid search, out-of-sample, walk-forward, PBO and Deflated Sharpe |
-| `npm run gate [-- --strategy X --sims N]` | Promotion gate. Live authorization requires a PASS for the active strategy |
-| `npm run context` | CoinPaprika, Binance.US, Kraken and Fear & Greed snapshot |
-| `npm run paper [-- --duration 2h --strategy X --keep-position]` | Paper trading on live public data |
-| `npm run dashboard [-- --mode live --once]` | Terminal dashboard |
-| `npm run report [-- --mode paper]` | JSON status report |
-| `npm run proposal -- validate\|compare\|apply <file>` | Strategy proposals (apply is human-only) |
-| `npm run kill [-- --reason "..."]` | Emergency kill switch |
-| `npm run halt:status` / `npm run halt:reset` | Inspect or clear halts (reset is interactive) |
-| `npm run live:authorize`, `npm run live` | Live stage, **disabled in this build** |
-| `npm test` / `npm run typecheck` | 119 unit and integration tests / TypeScript check |
+| Command                                                         | Purpose                                                                             |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `npm run validate:exchange [-- --exchanges a,b]`                | Market minimums, precision, WebSocket support, spread, fee economics (public API)   |
+| `npm run history:fetch -- --days N`                             | Cache 1m candles in `data/history.db` (Bitstamp by default; Kraken serves only 12h) |
+| `npm run backtest [-- --strategy X --days N]`                   | Backtest one strategy                                                               |
+| `npm run optimize [-- --strategy X]`                            | Grid search, out-of-sample, walk-forward, PBO and Deflated Sharpe                   |
+| `npm run gate [-- --strategy X --sims N]`                       | Promotion gate. Live authorization requires a PASS for the active strategy          |
+| `npm run context`                                               | CoinPaprika, Binance.US, Kraken and Fear & Greed snapshot                           |
+| `npm run paper [-- --duration 2h --strategy X --keep-position]` | Paper trading on live public data                                                   |
+| `npm run dashboard [-- --mode live --once]`                     | Terminal dashboard                                                                  |
+| `npm run report [-- --mode paper]`                              | JSON status report                                                                  |
+| `npm run proposal -- validate\|compare\|apply <file>`           | Strategy proposals (apply is human-only)                                            |
+| `npm run kill [-- --reason "..."]`                              | Emergency kill switch                                                               |
+| `npm run halt:status` / `npm run halt:reset`                    | Inspect or clear halts (reset is interactive)                                       |
+| `npm run live:authorize`, `npm run live`                        | Live stage, **disabled in this build**                                              |
+| `npm test` / `npm run typecheck`                                | 119 unit and integration tests / TypeScript check                                   |
 
 ## Configuration
 
-| File | What it holds | Who changes it |
-|---|---|---|
-| [`config/default.json`](config/default.json) | Exchange, verified fees, market data, paper and backtest settings, context APIs, paths | Owner |
-| [`config/strategy.json`](config/strategy.json) | `active` strategy plus every strategy's parameters | Owner, via proposals |
-| [`src/risk/limits.ts`](src/risk/limits.ts) | Hard risk limits | Code only, needs owner approval |
-| [`src/backtest/gate.ts`](src/backtest/gate.ts) | Promotion criteria | Code only, needs owner approval |
-| `.env` | Live credentials, **only** at the live stage | Owner; never committed |
+| File                                           | What it holds                                                                          | Who changes it                  |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------- |
+| [`config/default.json`](config/default.json)   | Exchange, verified fees, market data, paper and backtest settings, context APIs, paths | Owner                           |
+| [`config/strategy.json`](config/strategy.json) | `active` strategy plus every strategy's parameters                                     | Owner, via proposals            |
+| [`src/risk/limits.ts`](src/risk/limits.ts)     | Hard risk limits                                                                       | Code only, needs owner approval |
+| [`src/backtest/gate.ts`](src/backtest/gate.ts) | Promotion criteria                                                                     | Code only, needs owner approval |
+| `.env`                                         | Live credentials, **only** at the live stage                                           | Owner; never committed          |
 
 ## Live trading (locked)
 
@@ -288,12 +295,12 @@ docs/            setup, validation research, live procedure, supervisor rules, c
 
 ## Version history
 
-| Version | Highlights |
-|---|---|
-| 0.3.1 | Logo, README rewrite |
-| 0.3.0 | Intraday redesign: pluggable strategies, VWAP reversion, volatility breakout, time-of-day filter, random-entry test, promotion gate, market-context APIs and price-divergence veto |
-| 0.2.0 | Overfitting diagnostics: PBO and Probabilistic/Deflated Sharpe |
-| 0.1.0 | Paper-trading system: risk engine, execution engine, paper adapter, backtester, optimizer, dashboard, kill switch, gated live stage |
+| Version | Highlights                                                                                                                                                                         |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.3.1   | Logo, README rewrite                                                                                                                                                               |
+| 0.3.0   | Intraday redesign: pluggable strategies, VWAP reversion, volatility breakout, time-of-day filter, random-entry test, promotion gate, market-context APIs and price-divergence veto |
+| 0.2.0   | Overfitting diagnostics: PBO and Probabilistic/Deflated Sharpe                                                                                                                     |
+| 0.1.0   | Paper-trading system: risk engine, execution engine, paper adapter, backtester, optimizer, dashboard, kill switch, gated live stage                                                |
 
 ## Disclaimer
 

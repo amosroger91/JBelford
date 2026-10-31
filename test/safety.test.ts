@@ -17,7 +17,11 @@ describe('live gate', () => {
 
   it('refuses even with mode, credentials and no kill switch', () => {
     const dir = mkdtempSync(join(tmpdir(), 'jb-'));
-    const r = verifyLiveGate({ stateDir: dir, exchangeId: 'kraken', env: { JB_TRADING_MODE: 'live', JB_API_KEY: 'k', JB_API_SECRET: 's' } });
+    const r = verifyLiveGate({
+      stateDir: dir,
+      exchangeId: 'kraken',
+      env: { JB_TRADING_MODE: 'live', JB_API_KEY: 'k', JB_API_SECRET: 's' },
+    });
     expect(r.ok).toBe(false);
     expect(r.authorization).toBeUndefined();
     expect(r.reasons.join()).toMatch(/LIVE_STAGE_ENABLED/);
@@ -47,7 +51,10 @@ describe('kill switch', () => {
 describe('secret redaction', () => {
   it('redacts credential-looking keys and registered values', () => {
     registerSecret('SUPERSECRETKEY123');
-    const out = redact({ apiKey: 'abc', nested: { secret: 'x', msg: 'auth failed for SUPERSECRETKEY123' }, price: 1 }) as Record<string, unknown>;
+    const out = redact({ apiKey: 'abc', nested: { secret: 'x', msg: 'auth failed for SUPERSECRETKEY123' }, price: 1 }) as Record<
+      string,
+      unknown
+    >;
     expect(out.apiKey).toBe('[REDACTED]');
     expect((out.nested as Record<string, unknown>).secret).toBe('[REDACTED]');
     expect(JSON.stringify(out)).not.toContain('SUPERSECRETKEY123');
@@ -80,11 +87,14 @@ describe('Claude proposals cannot touch risk or mode', () => {
     expect(r.merged?.volBreakout.allowedHoursUtc).toEqual([13, 14, 15]);
   });
 
-  it.each(['maxOrderValueUsd', 'maxDailyLossUsd', 'maxConsecutiveLosses', 'cooldownMs', 'liveTrading', 'leverage', 'minDeflatedSharpe'])('rejects %s', (key) => {
-    const r = checkProposal(p({ [key]: 999 }), current);
-    expect(r.ok).toBe(false);
-    expect(r.errors.join()).toMatch(/not a momentum parameter/);
-  });
+  it.each(['maxOrderValueUsd', 'maxDailyLossUsd', 'maxConsecutiveLosses', 'cooldownMs', 'liveTrading', 'leverage', 'minDeflatedSharpe'])(
+    'rejects %s',
+    (key) => {
+      const r = checkProposal(p({ [key]: 999 }), current);
+      expect(r.ok).toBe(false);
+      expect(r.errors.join()).toMatch(/not a momentum parameter/);
+    },
+  );
 
   it('rejects out-of-bounds values, multi-day holds, unknown strategies and extra top-level fields', () => {
     expect(checkProposal(p({ stopLossPct: 50 }), current).ok).toBe(false);

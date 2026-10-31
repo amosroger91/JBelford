@@ -17,7 +17,9 @@ import type { GridSpec } from '../backtest/optimize';
  *   npm run gate -- --sims 200
  *   npm run gate -- --strategy vwapReversion   research a non-active strategy (cannot authorize live)
  */
-const { values } = parseArgs({ options: { sims: { type: 'string', default: '100' }, days: { type: 'string' }, strategy: { type: 'string' } } });
+const { values } = parseArgs({
+  options: { sims: { type: 'string', default: '100' }, days: { type: 'string' }, strategy: { type: 'string' } },
+});
 
 setQuiet(true);
 const { cfg, dataDir, stateDir, reportsDir } = appContext();

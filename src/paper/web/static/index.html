@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paper Trading</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="band" data-testid="paper-band">PAPER — SIMULATED FUNDS</div>
+    <header>
+      <h1>Paper trading</h1>
+      <label class="picker"
+        >Session
+        <select id="session" data-testid="session-select"></select
+      ></label>
+    </header>
+
+    <section class="controls" aria-label="Controls">
+      <button data-action="pause" data-testid="btn-pause">Pause</button>
+      <button data-action="resume" data-testid="btn-resume">Resume</button>
+      <button data-action="stop" data-testid="btn-stop">Stop</button>
+      <button data-action="flatten" data-testid="btn-flatten">Simulated flatten</button>
+      <span id="control-msg" class="muted" data-testid="control-msg" role="status"></span>
+    </section>
+
+    <section class="start" id="start-box" aria-label="Start a new paper session">
+      <label
+        >Strategy
+        <select id="start-strategy" data-testid="start-strategy"></select
+      ></label>
+      <label>Duration (min) <input id="start-duration" type="number" min="1" max="1440" value="30" data-testid="start-duration" /></label>
+      <button id="start-btn" data-testid="btn-start">Start new paper session</button>
+    </section>
+
+    <div class="grid">
+      <section class="card" aria-label="Market">
+        <h2>Market</h2>
+        <dl>
+          <dt>Venue / product</dt>
+          <dd data-field="venue"></dd>
+          <dt>Last trade</dt>
+          <dd data-field="lastTrade"></dd>
+          <dt>Bid / ask</dt>
+          <dd data-field="bidask"></dd>
+          <dt>Spread</dt>
+          <dd data-field="spread"></dd>
+          <dt>Feed</dt>
+          <dd data-field="feed" data-testid="feed-state"></dd>
+          <dt>Feed age</dt>
+          <dd data-field="feedAge"></dd>
+          <dt>Session status</dt>
+          <dd data-field="status" data-testid="session-status"></dd>
+          <dt>Last event (UTC)</dt>
+          <dd data-field="lastEvent"></dd>
+        </dl>
+      </section>
+      <section class="card" aria-label="Account">
+        <h2>Account <span class="tag">simulated</span></h2>
+        <dl>
+          <dt>Initial cash</dt>
+          <dd data-field="initialUsd"></dd>
+          <dt>Cash available / reserved</dt>
+          <dd data-field="usd" data-testid="cash"></dd>
+          <dt>BTC available / reserved</dt>
+          <dd data-field="btc"></dd>
+          <dt>Equity (mid)</dt>
+          <dd data-field="equity" data-testid="equity"></dd>
+          <dt>Net trading PnL</dt>
+          <dd data-field="pnl"></dd>
+          <dt>All-in operating PnL</dt>
+          <dd data-field="allIn"></dd>
+          <dt>Fees paid</dt>
+          <dd data-field="fees"></dd>
+          <dt>Max drawdown</dt>
+          <dd data-field="dd"></dd>
+          <dt>Exposure (avg)</dt>
+          <dd data-field="exposure"></dd>
+        </dl>
+      </section>
+    </div>
+
+    <section class="card" aria-label="Equity">
+      <h2>Equity vs. controls</h2>
+      <svg id="chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Equity curve"></svg>
+      <p class="muted" id="controls-line"></p>
+    </section>
+
+    <section class="card" aria-label="Orders and fills">
+      <h2>Order / fill blotter</h2>
+      <div class="scroll">
+        <table data-testid="orders-table">
+          <thead>
+            <tr>
+              <th>Submitted</th>
+              <th>Arrival</th>
+              <th>Side</th>
+              <th>Requested</th>
+              <th>Filled</th>
+              <th>Avg price</th>
+              <th>Fees</th>
+              <th>Status</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="orders"></tbody>
+        </table>
+      </div>
+      <div class="scroll">
+        <table data-testid="fills-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Fill</th>
+              <th>Side</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Fee</th>
+            </tr>
+          </thead>
+          <tbody id="fills"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Decisions">
+      <h2>Decisions and risk checks</h2>
+      <div id="decisions"></div>
+    </section>
+
+    <section class="card" aria-label="Qualification">
+      <h2>Qualification</h2>
+      <p>
+        Operational correctness: <b data-field="opCorrect"></b> · Strategy evidence: <b data-field="evidence" data-testid="evidence"></b>
+      </p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Gate</th>
+              <th>Result</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody id="gates"></tbody>
+        </table>
+      </div>
+      <ul id="findings" class="muted"></ul>
+    </section>
+
+    <section class="card" aria-label="Session">
+      <h2>Session</h2>
+      <p data-field="purpose" data-testid="purpose"></p>
+      <p class="muted mono" data-field="identity"></p>
+    </section>
+    <footer class="muted">Simulated orders against real public market data. Not live trading. Not financial advice.</footer>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

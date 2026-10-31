@@ -227,7 +227,10 @@ describe('random-entry null test', () => {
   });
 
   it('a signal-free strategy is indistinguishable from random entries', () => {
-    const always = new MomentumStrategy({ ...PARAMS, minRocPct: 0.01, volMult: 0.5, maxExtensionPct: 5, minNetTargetPct: 0 }, { maker: 0, taker: 0 });
+    const always = new MomentumStrategy(
+      { ...PARAMS, minRocPct: 0.01, volMult: 0.5, maxExtensionPct: 5, minNetTargetPct: 0 },
+      { maker: 0, taker: 0 },
+    );
     const r = randomEntryTest(candles, always, opts, 40, 3);
     expect(r.pValue).toBeGreaterThan(0.05);
   });
@@ -239,7 +242,14 @@ describe('promotion gate result binding', () => {
   const write = (over: Record<string, unknown>) =>
     writeFileSync(
       gateResultPath(dir),
-      JSON.stringify({ pass: true, strategy: 'volBreakout', strategyConfigSha256: 'abc', createdAt: new Date(now).toISOString(), checks: [], ...over }),
+      JSON.stringify({
+        pass: true,
+        strategy: 'volBreakout',
+        strategyConfigSha256: 'abc',
+        createdAt: new Date(now).toISOString(),
+        checks: [],
+        ...over,
+      }),
     );
 
   it('blocks when no gate has run', () => {
@@ -274,17 +284,29 @@ describe('market context', () => {
   });
 
   const fakeFetch = (status: number, body: unknown) =>
-    (async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+    (async () =>
+      new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
 
   it('parses CoinPaprika tickers and rejects malformed responses', async () => {
     const body = {
       id: 'btc-bitcoin',
       last_updated: '2026-10-31T08:18:12Z',
-      quotes: { USD: { price: 77315.5, volume_24h: 2.3e10, percent_change_15m: 0.1, percent_change_1h: 0.2, percent_change_24h: -0.3, market_cap: 1.5e12 } },
+      quotes: {
+        USD: {
+          price: 77315.5,
+          volume_24h: 2.3e10,
+          percent_change_15m: 0.1,
+          percent_change_1h: 0.2,
+          percent_change_24h: -0.3,
+          market_cap: 1.5e12,
+        },
+      },
     };
     const t = await coinpaprikaTicker({ fetchImpl: fakeFetch(200, body), minIntervalMs: 0 });
     expect(t.price).toBe(77315.5);
-    await expect(coinpaprikaTicker({ fetchImpl: fakeFetch(200, { id: 'eth-ethereum' }), minIntervalMs: 0, retries: 0 })).rejects.toThrow(/validation/);
+    await expect(coinpaprikaTicker({ fetchImpl: fakeFetch(200, { id: 'eth-ethereum' }), minIntervalMs: 0, retries: 0 })).rejects.toThrow(
+      /validation/,
+    );
   });
 
   it('does not retry geo-blocked (451) endpoints', async () => {

@@ -11,7 +11,16 @@ describe('dashboard', () => {
     store.insertBalance(T0, { usd: 50, btc: 0 }, 77000);
     store.closePositionWithTrade(trade({ netPnl: 0.0193, closedAt: T0 + 60_000 }));
     store.insertBalance(T0 + 120_000, { usd: 50.0193, btc: 0 }, 77100);
-    store.setKv(HEARTBEAT_KEY, { ts: T0 + 120_000, phase: 'FLAT', transport: 'websocket', dataAgeMs: 400, stateCertain: true, bid: 77100, ask: 77100.1, pid: 1 });
+    store.setKv(HEARTBEAT_KEY, {
+      ts: T0 + 120_000,
+      phase: 'FLAT',
+      transport: 'websocket',
+      dataAgeMs: 400,
+      stateCertain: true,
+      bid: 77100,
+      ask: 77100.1,
+      pid: 1,
+    });
     const text = renderDashboard(buildSnapshot(store, risk, 'paper', null, 0.008, T0 + 125_000), false);
     expect(text).toContain('PAPER TRADING');
     expect(text).toContain('USD $50.02');

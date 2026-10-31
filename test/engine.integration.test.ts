@@ -27,7 +27,13 @@ class StubStrategy implements Strategy {
 }
 
 function harness(
-  opts: { store?: Store; faults?: { ambiguousCreateRate: number; rejectRate: number }; seed?: number; now?: number; veto?: () => string | null } = {},
+  opts: {
+    store?: Store;
+    faults?: { ambiguousCreateRate: number; rejectRate: number };
+    seed?: number;
+    now?: number;
+    veto?: () => string | null;
+  } = {},
 ) {
   const clock = { now: opts.now ?? T0 + 3_600_000 };
   const store = opts.store ?? memStore();
@@ -42,18 +48,31 @@ function harness(
     now: () => clock.now,
   });
   let bid = 77000;
-  const guarded = new GuardedAdapter(paper, risk, store, () => bid, () => clock.now);
+  const guarded = new GuardedAdapter(
+    paper,
+    risk,
+    store,
+    () => bid,
+    () => clock.now,
+  );
   const strategy = new StubStrategy();
   let killed = false;
-  const engine = new TradingEngine(store, risk, guarded, strategy, { fees: FEES, spreadBps: 1, takerSlippageBps: 5 }, {
-    mode: 'paper',
-    ambiguousGraceMs: 0,
-    sizeFraction: 0.98,
-    balanceSnapshotMs: 60_000,
-    now: () => clock.now,
-    killSwitch: () => killed,
-    entryVeto: opts.veto,
-  });
+  const engine = new TradingEngine(
+    store,
+    risk,
+    guarded,
+    strategy,
+    { fees: FEES, spreadBps: 1, takerSlippageBps: 5 },
+    {
+      mode: 'paper',
+      ambiguousGraceMs: 0,
+      sizeFraction: 0.98,
+      balanceSnapshotMs: 60_000,
+      now: () => clock.now,
+      killSwitch: () => killed,
+      entryVeto: opts.veto,
+    },
+  );
   const candles: Candle[] = [];
   const h = {
     store,

@@ -52,9 +52,7 @@ function emit(level: LogLevel, msg: string, data?: Record<string, unknown>): voi
   const safeData = data ? (redact(data) as Record<string, unknown>) : undefined;
   for (const s of extraSinks) s(level, safeMsg, safeData);
   if (quiet && level !== 'error') return;
-  const line = `${new Date().toISOString()} ${level.toUpperCase().padEnd(5)} ${safeMsg}${
-    safeData ? ' ' + JSON.stringify(safeData) : ''
-  }`;
+  const line = `${new Date().toISOString()} ${level.toUpperCase().padEnd(5)} ${safeMsg}${safeData ? ' ' + JSON.stringify(safeData) : ''}`;
   (level === 'error' || level === 'warn' ? console.error : console.log)(line);
 }
 

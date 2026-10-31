@@ -405,13 +405,7 @@ export class TradingEngine {
       });
     }
     const status =
-      remote.status === 'open'
-        ? 'open'
-        : remote.status === 'closed'
-          ? 'filled'
-          : remote.status === 'canceled'
-            ? 'canceled'
-            : 'rejected';
+      remote.status === 'open' ? 'open' : remote.status === 'closed' ? 'filled' : remote.status === 'canceled' ? 'canceled' : 'rejected';
     this.store.updateOrder(
       local.clientOrderId,
       {
@@ -461,9 +455,7 @@ export class TradingEngine {
       .filter((o) => o.side === 'sell' && o.filled > 0)
       .at(-1);
     const reason: ExitReason =
-      lastSell?.purpose === 'take_profit'
-        ? 'take_profit'
-        : (this.store.getKv<ExitReason>(EXIT_REASON_KEY(tradeId)) ?? 'risk_flatten');
+      lastSell?.purpose === 'take_profit' ? 'take_profit' : (this.store.getKv<ExitReason>(EXIT_REASON_KEY(tradeId)) ?? 'risk_flatten');
     const exitPrice = ex.notional / ex.amount;
     const gross = ex.notional - pos.amount * pos.entryPrice;
     const trade: TradeRecord = {

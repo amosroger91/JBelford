@@ -2,13 +2,7 @@ import ccxt, { type Exchange, type Order } from 'ccxt';
 import type { AdapterOrder, AdapterOrderStatus, Balance, MarketInfo } from '../core/types';
 import { registerSecret } from '../core/log';
 import { LiveAuthorization } from '../safety/liveGate';
-import {
-  AmbiguousOrderError,
-  OrderRejectedError,
-  type ExchangeAdapter,
-  type LimitOrderRequest,
-  type MarketOrderRequest,
-} from './adapter';
+import { AmbiguousOrderError, OrderRejectedError, type ExchangeAdapter, type LimitOrderRequest, type MarketOrderRequest } from './adapter';
 
 /**
  * Live CCXT adapter. Construction requires a valid LiveAuthorization, which
@@ -60,7 +54,12 @@ export class LiveAdapter implements ExchangeAdapter {
   }
 
   private mapError(e: unknown): never {
-    if (e instanceof ccxt.InvalidOrder || e instanceof ccxt.InsufficientFunds || e instanceof ccxt.BadRequest || e instanceof ccxt.PermissionDenied) {
+    if (
+      e instanceof ccxt.InvalidOrder ||
+      e instanceof ccxt.InsufficientFunds ||
+      e instanceof ccxt.BadRequest ||
+      e instanceof ccxt.PermissionDenied
+    ) {
       throw new OrderRejectedError(String((e as Error).message));
     }
     // NetworkError, RequestTimeout, ExchangeNotAvailable, DDoSProtection and anything unexpected:
@@ -70,7 +69,15 @@ export class LiveAdapter implements ExchangeAdapter {
 
   private toAdapter(o: Order): AdapterOrder {
     const status: AdapterOrderStatus =
-      o.status === 'open' ? 'open' : o.status === 'closed' ? 'closed' : o.status === 'canceled' || o.status === 'expired' ? 'canceled' : o.status === 'rejected' ? 'rejected' : 'open';
+      o.status === 'open'
+        ? 'open'
+        : o.status === 'closed'
+          ? 'closed'
+          : o.status === 'canceled' || o.status === 'expired'
+            ? 'canceled'
+            : o.status === 'rejected'
+              ? 'rejected'
+              : 'open';
     let fee = 0;
     for (const f of o.fees ?? (o.fee ? [o.fee] : [])) {
       if (!f?.cost) continue;

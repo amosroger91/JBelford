@@ -5,9 +5,11 @@ All notable changes to this project are recorded here (plus full history in git)
 ## 0.3.1 (2026-10-31): logo and README
 
 ### Added
+
 - Project logo (`docs/assets/logo.png`, plus a 64px icon at `docs/assets/logo-64.png`).
 
 ### Changed
+
 - README rewritten: status at a glance, full feature list (strategies, validation pipeline,
   execution and safety, market context, Claude supervisor, monitoring), architecture, hard limits,
   gate criteria, commands, configuration, live-trading gates, layout and version history.
@@ -15,6 +17,7 @@ All notable changes to this project are recorded here (plus full history in git)
 ## 0.3.0 (2026-10-31): intraday redesign, promotion gate, market context
 
 ### Changed
+
 - **Built for intraday (minutes to hours).** Strategies are pluggable (`src/strategy/types.ts`) and
   every strategy must close positions within 12 hours (`maxHoldMinutes` <= 720, schema-enforced).
 - Exits are chosen per trade at signal time (e.g. ATR- or stretch-sized) and persisted before the
@@ -25,6 +28,7 @@ All notable changes to this project are recorded here (plus full history in git)
   `activate` it. They still cannot touch risk limits, gate criteria, mode, exchange or fees.
 
 ### Added
+
 - `vwapReversion`: buys stretched, high-volume sell-offs below rolling VWAP on the first reversal
   bar; target sized to the stretch (clamped), fixed stop, crash guard.
 - `volBreakout`: Bollinger-squeeze breakout on 5-60 min bars with volume and optional trend filter;
@@ -43,11 +47,12 @@ All notable changes to this project are recorded here (plus full history in git)
   null test detects a real (cheating) edge.
 
 ### Findings (45 days, Kraken Tier-1 fees)
-| Strategy | Trades | Avg hold | Net | Gross | Random-entry p | Gate |
-|---|---|---|---|---|---|---|
-| momentum | 91 | 89 min | -$11.68 | -$1.23 | 0.86 | FAIL |
-| vwapReversion | 7 | 207 min | -$1.05 | -$0.23 | 0.79 | FAIL |
-| volBreakout | 29 | 185 min | -$3.30 | +$0.03 | 0.36 | FAIL |
+
+| Strategy      | Trades | Avg hold | Net     | Gross  | Random-entry p | Gate |
+| ------------- | ------ | -------- | ------- | ------ | -------------- | ---- |
+| momentum      | 91     | 89 min   | -$11.68 | -$1.23 | 0.86           | FAIL |
+| vwapReversion | 7      | 207 min  | -$1.05  | -$0.23 | 0.79           | FAIL |
+| volBreakout   | 29     | 185 min  | -$3.30  | +$0.03 | 0.36           | FAIL |
 
 Random entries with the same exits lose about $0.12 per trade, roughly the round-trip cost. No signal
 beats random entries yet.
@@ -55,6 +60,7 @@ beats random entries yet.
 ## 0.2.0 (2026-10-31): overfitting diagnostics
 
 ### Added
+
 - `src/backtest/overfitting.ts`: Probability of Backtest Overfitting via CSCV (Bailey et al. 2014),
   Probabilistic Sharpe Ratio, and Deflated Sharpe Ratio (Bailey & López de Prado 2014), computed on
   per-period net P&L across every optimizer trial.
@@ -65,12 +71,14 @@ beats random entries yet.
 - 12 new tests (95 total), including noise-only and genuine-edge synthetic cases.
 
 ### Findings (45 days, 108 active trials)
+
 - PBO 0%: the ranking is stable, but the in-sample winner lost money out-of-sample in 100% of splits.
 - Best Sharpe −0.81 per day vs. luck benchmark +0.73; Deflated Sharpe 0%. No evidence of an edge.
 
 ## 0.1.0 (2026-10-31): initial paper-trading system
 
 ### Research & validation
+
 - Reviewed the CCXT MCP ecosystem: there is no official CCXT-maintained server. Selected the community
   `@mcpfun/mcp-server-ccxt@1.2.1`, pinned and keyless, for research only.
 - Validated BTC/USD on Kraken, Coinbase, Bitstamp and Gemini via public APIs. Selected Kraken
@@ -78,6 +86,7 @@ beats random entries yet.
 - Verified Kraken Tier-1 fees (0.40% / 0.80%) on the official page; ccxt's built-in table (0.16% / 0.26%) is stale.
 
 ### Added
+
 - Hard risk limits as compiled constants and an independent `RiskEngine`.
 - `GuardedAdapter` order-level invariants (no market buys, no shorting, ≤ $10, nothing while halted).
 - `TradingEngine` state machine with persisted client order ids, reconciliation, ambiguous-response
@@ -93,5 +102,6 @@ beats random entries yet.
 - 83 unit and integration tests; Windows PowerShell documentation.
 
 ### Findings
+
 - Baseline 1% / 0.5%: 91 trades over 45 days, net −$11.68 on $50 (fees $10.45). All 162 optimizer
   combinations lost money; walk-forward −$3.05 over 27 trades. No edge demonstrated at Tier-1 fees.

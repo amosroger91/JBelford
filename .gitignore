@@ -13,3 +13,7 @@ node_modules/
 /reports/
 /coverage/
 *.log
+/dist/
+/artifacts/
+test-results/
+playwright-report/

@@ -82,7 +82,12 @@ export async function runEngine(o: RunOptions): Promise<void> {
 
   await o.feed.start();
   context?.start();
-  log.info(`${o.mode} engine started`, { exchange: o.cfg.exchange.id, symbol: o.market.symbol, strategy: o.strategy.name, market: o.market });
+  log.info(`${o.mode} engine started`, {
+    exchange: o.cfg.exchange.id,
+    symbol: o.market.symbol,
+    strategy: o.strategy.name,
+    market: o.market,
+  });
   o.store.insertEvent(Date.now(), 'info', `${o.mode} engine started: ${o.strategy.name} (pid ${process.pid})`);
 
   const started = Date.now();

@@ -99,7 +99,13 @@ export class VolBreakoutStrategy implements Strategy {
       takeProfitPct: exits.takeProfitPct,
       stopLossPct: exits.stopLossPct,
     };
-    if (!Number.isFinite(squeezeRank) || !Number.isFinite(volBase) || !Number.isFinite(atrPct) || j < p.breakoutBars || (p.trendEmaBars > 0 && !Number.isFinite(trend))) {
+    if (
+      !Number.isFinite(squeezeRank) ||
+      !Number.isFinite(volBase) ||
+      !Number.isFinite(atrPct) ||
+      j < p.breakoutBars ||
+      (p.trendEmaBars > 0 && !Number.isFinite(trend))
+    ) {
       return { enter: false, reasons: ['warming up'], metrics, exits };
     }
     const reasons: string[] = [];

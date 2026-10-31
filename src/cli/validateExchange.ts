@@ -60,7 +60,8 @@ async function main() {
         fetchClosedOrders: ex.has.fetchClosedOrders,
       };
       if (!m.spot) problems.push('not a spot market');
-      if (minOrderUsd > HARD_LIMITS.maxOrderValueUsd * 0.98) problems.push(`exchange minimum ~$${minOrderUsd.toFixed(2)} is at/above the $${HARD_LIMITS.maxOrderValueUsd} cap`);
+      if (minOrderUsd > HARD_LIMITS.maxOrderValueUsd * 0.98)
+        problems.push(`exchange minimum ~$${minOrderUsd.toFixed(2)} is at/above the $${HARD_LIMITS.maxOrderValueUsd} cap`);
       if (!ws?.has.watchOrderBook) problems.push('no WebSocket order book (polling fallback only)');
       if (id === cfg.exchange.id && (m.maker !== cfg.exchange.fees.maker || m.taker !== cfg.exchange.fees.taker)) {
         r.feeNote = `ccxt's built-in fee table (${m.maker}/${m.taker}) differs from the configured, verified schedule (${cfg.exchange.fees.maker}/${cfg.exchange.fees.taker}). The configured values are used. Re-verify on the exchange's fee page before going live; with credentials, fetchTradingFee shows your actual tier.`;

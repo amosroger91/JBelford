@@ -1,12 +1,7 @@
 import type { AdapterOrder, Balance, MarketInfo } from '../core/types';
 import type { RiskEngine } from '../risk/engine';
 import type { Store } from '../persistence/store';
-import {
-  RiskViolationError,
-  type ExchangeAdapter,
-  type LimitOrderRequest,
-  type MarketOrderRequest,
-} from './adapter';
+import { RiskViolationError, type ExchangeAdapter, type LimitOrderRequest, type MarketOrderRequest } from './adapter';
 
 /**
  * Last line of defense: every order passes through here before it reaches any
@@ -52,7 +47,8 @@ export class GuardedAdapter implements ExchangeAdapter {
     const halt = this.risk.activeHalt(now);
     if (halt) throw new RiskViolationError(`buy blocked, halted: ${halt.reason}`);
     if (this.store.openPosition()) throw new RiskViolationError('buy blocked: position already open');
-    if (this.store.openOrders().some((o) => o.side === 'buy' && o.clientOrderId !== clientOrderId)) throw new RiskViolationError('buy blocked: entry already working');
+    if (this.store.openOrders().some((o) => o.side === 'buy' && o.clientOrderId !== clientOrderId))
+      throw new RiskViolationError('buy blocked: entry already working');
     if (!(price > 0) || amount * price > L.maxOrderValueUsd + 1e-9) {
       throw new RiskViolationError(`buy value ${(amount * price).toFixed(2)} exceeds $${L.maxOrderValueUsd}`);
     }

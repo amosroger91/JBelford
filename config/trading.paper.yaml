@@ -1,0 +1,61 @@
+# Paper-trading session configuration (simulation defaults, NOT live-account limits).
+# Copy to config/trading.paper.local.yaml (gitignored) to customize.
+mode: paper # the only supported mode; anything else is rejected
+venue: coinbase
+product: BTC-USD
+purpose: Forward paper observation of BTC-USD with simulated funds and orders
+initialBalances:
+  usd: '10000'
+  btc: '0'
+strategy:
+  id: emaTrend
+  params: {}
+decision:
+  barSeconds: 300 # decide on every completed five-minute bar
+  timeoutMs: 20000
+  intentTtlMs: 60000
+  coalesce: skip
+execution:
+  model: ioc-depth-walk-v1
+  delayMs: 750 # conservative arrival delay after decision completion
+  participation: '0.25' # max share of each displayed level our orders may consume
+  guardBps: 50 # never fill worse than 0.50% from the touch at arrival
+fees:
+  version: coinbase-advanced-us-intro-2026-09
+  takerRate: '0.009'
+  makerRate: '0.005'
+  source: Third-party reports of the Coinbase Advanced US entry tier effective 2026-09-16; the official fee page returned HTTP 403 when checked
+  asOf: '2026-10-31'
+  verified: false
+risk:
+  version: paper-risk-v1
+  maxExposure: '0.20'
+  maxOrderPctEquity: '0.05'
+  dailyLossPausePct: '0.02'
+  drawdownPausePct: '0.05'
+  maxSpreadBps: 10
+  minTouchDepthUsd: '100'
+  maxOrdersPerHour: 12
+  maxOpenOrders: 1
+  minRebalancePctEquity: '0.005'
+  operatingCostBudgetUsd: '0'
+feed:
+  staleMs: 5000
+  maxClockSkewMs: 5000
+  tickMs: 1000
+  reconnectMinMs: 1000
+  reconnectMaxMs: 30000
+recording:
+  dir: data/paper/recordings
+  segmentSeconds: 300
+storage:
+  db: state/paper/trading.db
+readiness:
+  version: paper-qualification-v1
+  minDays: 60
+  minRoundTrips: 100
+  minCoveragePct: 95
+  minContinuousHours: 24
+  bootstrapBlockDays: 5
+  bootstrapSamples: 2000
+  confidence: 0.95

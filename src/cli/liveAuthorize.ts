@@ -32,10 +32,14 @@ async function main() {
   });
   console.log('You are about to authorize LIVE trading with REAL MONEY.\n');
   console.log(`Exchange: ${cfg.exchange.id}  Symbol: ${cfg.exchange.symbol}  Strategy: ${strategy.name}  Window: ${hours}h`);
-  console.log(`Hard limits: max order $${HARD_LIMITS.maxOrderValueUsd}, max daily loss $${HARD_LIMITS.maxDailyLossUsd}, ` +
-    `${HARD_LIMITS.maxConsecutiveLosses} losses -> shutdown, ${HARD_LIMITS.maxTradesPerDay} trades/day, ${HARD_LIMITS.cooldownMs / 60000} min cooldown`);
+  console.log(
+    `Hard limits: max order $${HARD_LIMITS.maxOrderValueUsd}, max daily loss $${HARD_LIMITS.maxDailyLossUsd}, ` +
+      `${HARD_LIMITS.maxConsecutiveLosses} losses -> shutdown, ${HARD_LIMITS.maxTradesPerDay} trades/day, ${HARD_LIMITS.cooldownMs / 60000} min cooldown`,
+  );
   console.log(`Fees: maker ${(cfg.exchange.fees.maker * 100).toFixed(2)}% taker ${(cfg.exchange.fees.taker * 100).toFixed(2)}%`);
-  console.log(`Reference trade (1.5% target / 1% stop) after costs: win ${econ.winNetPct.toFixed(3)}%, loss ${econ.lossNetPct.toFixed(3)}%, breakeven win rate ${(econ.breakevenWinRate * 100).toFixed(1)}%`);
+  console.log(
+    `Reference trade (1.5% target / 1% stop) after costs: win ${econ.winNetPct.toFixed(3)}%, loss ${econ.lossNetPct.toFixed(3)}%, breakeven win rate ${(econ.breakevenWinRate * 100).toFixed(1)}%`,
+  );
   console.log('Backtest and paper results do not guarantee live profitability. You can lose the funds in the account.\n');
   const ok = await requireTypedConfirmation('Confirm authorization.', authorizationPhrase(cfg.exchange.id));
   if (!ok) {

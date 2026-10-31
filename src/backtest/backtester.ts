@@ -80,7 +80,8 @@ export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResu
 
   let usd = o.startingUsd;
   let btc = 0;
-  let pos: { tradeId: string; amount: number; entryPrice: number; entryFee: number; openedAt: number; stop: number; tp: number } | null = null;
+  let pos: { tradeId: string; amount: number; entryPrice: number; entryFee: number; openedAt: number; stop: number; tp: number } | null =
+    null;
   let pending: { price: number; amount: number; placedIdx: number; exits: { takeProfitPct: number; stopLossPct: number } } | null = null;
   let tradeSeq = 0;
   let signals = 0;
@@ -146,7 +147,15 @@ export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResu
         usd -= pending.amount * pending.price + fee;
         btc += pending.amount;
         const lv = exitLevels(pending.price, pending.exits);
-        pos = { tradeId: `bt-${++tradeSeq}`, amount: pending.amount, entryPrice: pending.price, entryFee: fee, openedAt: now, stop: lv.stop, tp: lv.takeProfit };
+        pos = {
+          tradeId: `bt-${++tradeSeq}`,
+          amount: pending.amount,
+          entryPrice: pending.price,
+          entryFee: fee,
+          openedAt: now,
+          stop: lv.stop,
+          tp: lv.takeProfit,
+        };
         pending = null;
         if (c.low <= pos.stop) closeTrade(pos.stop * (1 - halfSpread - slip), o.fees.taker, now, 'stop_loss');
       } else if (i - pending.placedIdx >= timeoutBars) {
@@ -155,7 +164,8 @@ export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResu
     } else if (pos) {
       const p: NonNullable<typeof pos> = pos;
       const unrealized = p.amount * c.close * (1 - halfSpread - slip) * (1 - o.fees.taker) - p.amount * p.entryPrice - p.entryFee;
-      const mustFlatten = dayRealized + unrealized <= -HARD_LIMITS.maxDailyLossUsd && risk.evaluateOpenPosition(now, unrealized).mustFlatten;
+      const mustFlatten =
+        dayRealized + unrealized <= -HARD_LIMITS.maxDailyLossUsd && risk.evaluateOpenPosition(now, unrealized).mustFlatten;
       if (c.open <= p.stop) closeTrade(c.open * (1 - halfSpread - slip), o.fees.taker, now, 'stop_loss');
       else if (c.low <= p.stop) closeTrade(p.stop * (1 - halfSpread - slip), o.fees.taker, now, 'stop_loss');
       else if (c.high > p.tp) closeTrade(p.tp, o.fees.maker, now, 'take_profit');

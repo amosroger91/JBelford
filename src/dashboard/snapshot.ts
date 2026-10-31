@@ -44,7 +44,8 @@ export function buildSnapshot(
   const heartbeat = store.getKv<Heartbeat>(HEARTBEAT_KEY);
   const position = store.openPosition();
   const mark = heartbeat?.bid ?? store.latestBalance()?.markPrice ?? 0;
-  const unrealized = position && mark ? position.amount * mark * (1 - takerFee) - position.amount * position.entryPrice - position.entryFee : 0;
+  const unrealized =
+    position && mark ? position.amount * mark * (1 - takerFee) - position.amount * position.entryPrice - position.entryFee : 0;
   return {
     mode,
     now,

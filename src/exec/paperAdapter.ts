@@ -1,13 +1,7 @@
 import type { AdapterOrder, Balance, Fees, MarketInfo, TopOfBook } from '../core/types';
 import type { Store } from '../persistence/store';
 import { makeRng } from '../core/util';
-import {
-  AmbiguousOrderError,
-  OrderRejectedError,
-  type ExchangeAdapter,
-  type LimitOrderRequest,
-  type MarketOrderRequest,
-} from './adapter';
+import { AmbiguousOrderError, OrderRejectedError, type ExchangeAdapter, type LimitOrderRequest, type MarketOrderRequest } from './adapter';
 
 interface PaperOrder extends AdapterOrder {
   postOnly: boolean;
@@ -147,7 +141,8 @@ export class PaperAdapter implements ExchangeAdapter {
     const px = req.side === 'buy' ? b.ask * (1 + slip) : b.bid * (1 - slip);
     const free = this.freeBalance();
     if (req.side === 'sell' && req.amount > free.btc + 1e-12) throw new OrderRejectedError('insufficient BTC');
-    if (req.side === 'buy' && req.amount * px * (1 + this.opts.fees.taker) > free.usd + 1e-9) throw new OrderRejectedError('insufficient USD');
+    if (req.side === 'buy' && req.amount * px * (1 + this.opts.fees.taker) > free.usd + 1e-9)
+      throw new OrderRejectedError('insufficient USD');
     const o: PaperOrder = {
       clientOrderId: req.clientOrderId,
       exchangeOrderId: `P${++this.state.seq}`,

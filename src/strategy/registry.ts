@@ -1,10 +1,5 @@
 import type { Fees } from '../core/types';
-import {
-  STRATEGY_PARAM_SCHEMAS,
-  type StrategyConfig,
-  type StrategyName,
-  type StrategyParamsByName,
-} from '../config/schema';
+import { STRATEGY_PARAM_SCHEMAS, type StrategyConfig, type StrategyName, type StrategyParamsByName } from '../config/schema';
 import { MomentumStrategy } from './momentum';
 import { VwapReversionStrategy } from './vwapReversion';
 import { VolBreakoutStrategy } from './volBreakout';

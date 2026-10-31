@@ -34,7 +34,9 @@ const s = summarize(res);
 const holdMin = res.trades.length ? res.trades.reduce((a, t) => a + (t.closedAt - t.openedAt), 0) / res.trades.length / 60_000 : 0;
 console.log(`Strategy: ${name}`);
 console.log(`Data: ${exchangeId} ${candles.length} bars ${new Date(res.startTs).toISOString()} .. ${new Date(res.endTs).toISOString()}`);
-console.log(`Fees: maker ${pct(opts.fees.maker * 100)} taker ${pct(opts.fees.taker * 100)}, spread ${opts.spreadBps}bps, taker slippage ${opts.takerSlippageBps}bps`);
+console.log(
+  `Fees: maker ${pct(opts.fees.maker * 100)} taker ${pct(opts.fees.taker * 100)}, spread ${opts.spreadBps}bps, taker slippage ${opts.takerSlippageBps}bps`,
+);
 console.table({
   signals: res.signals,
   entriesPlaced: res.entriesPlaced,
@@ -56,6 +58,9 @@ console.table({
 console.log('Exit reasons:', res.exitReasons);
 console.log('Reminder: a profitable backtest does NOT imply live profitability. Use `npm run gate` for the full validation.');
 const path = join(reportsDir, `backtest-${name}-${Date.now()}.json`);
-writeFileSync(path, JSON.stringify({ strategy: name, params: sc[name], opts, summary: s, result: { ...res, trades: res.trades.slice(-200) } }, null, 2));
+writeFileSync(
+  path,
+  JSON.stringify({ strategy: name, params: sc[name], opts, summary: s, result: { ...res, trades: res.trades.slice(-200) } }, null, 2),
+);
 console.log(`Saved ${path}`);
 store.db.close();

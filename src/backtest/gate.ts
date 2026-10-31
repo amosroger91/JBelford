@@ -53,7 +53,7 @@ export function runGate(
   const strategy = makeStrategy(name, params, opts.fees);
   const full = summarize(runBacktest(candles, { ...opts, strategy }));
   const opt = optimize(candles, name, params, grid, { ...opts, minTrades: 8, topK: 3, folds: 3 });
-  let nullTest: NullTestResult | null = null;
+  let nullTest: NullTestResult | null;
   try {
     nullTest = randomEntryTest(candles, strategy, opts, nullSims);
   } catch {
@@ -63,10 +63,25 @@ export function runGate(
   const avgNet = full.trades ? full.netPnl / full.trades : 0;
   const checks: GateCheck[] = [
     { name: 'walk-forward net P&L > 0', pass: wf.totalNet > 0, value: wf.totalNet, threshold: '> 0' },
-    { name: 'walk-forward trades', pass: wf.totalTrades >= C.minWalkForwardTrades, value: wf.totalTrades, threshold: `>= ${C.minWalkForwardTrades}` },
-    { name: 'out-of-sample net (current params)', pass: opt.baseline.outOfSample.netPnl > 0, value: opt.baseline.outOfSample.netPnl, threshold: '> 0' },
+    {
+      name: 'walk-forward trades',
+      pass: wf.totalTrades >= C.minWalkForwardTrades,
+      value: wf.totalTrades,
+      threshold: `>= ${C.minWalkForwardTrades}`,
+    },
+    {
+      name: 'out-of-sample net (current params)',
+      pass: opt.baseline.outOfSample.netPnl > 0,
+      value: opt.baseline.outOfSample.netPnl,
+      threshold: '> 0',
+    },
     { name: 'full-sample avg net per trade', pass: avgNet > 0, value: avgNet, threshold: '> 0' },
-    { name: 'full-sample profit factor', pass: full.profitFactor >= C.minProfitFactor, value: full.profitFactor, threshold: `>= ${C.minProfitFactor}` },
+    {
+      name: 'full-sample profit factor',
+      pass: full.profitFactor >= C.minProfitFactor,
+      value: full.profitFactor,
+      threshold: `>= ${C.minProfitFactor}`,
+    },
     {
       name: 'deflated Sharpe (grid)',
       pass: (opt.overfitting.dsr?.dsr ?? 0) >= C.minDeflatedSharpe,
@@ -115,10 +130,18 @@ export function gateBlockers(stateDir: string, activeStrategy: StrategyName, cur
   try {
     const r = JSON.parse(readFileSync(path, 'utf8')) as GateResult;
     const out: string[] = [];
-    if (!r.pass) out.push('promotion gate FAILED: ' + r.checks.filter((c) => !c.pass).map((c) => c.name).join(', '));
+    if (!r.pass)
+      out.push(
+        'promotion gate FAILED: ' +
+          r.checks
+            .filter((c) => !c.pass)
+            .map((c) => c.name)
+            .join(', '),
+      );
     if (r.strategy !== activeStrategy) out.push(`gate result is for ${r.strategy}, active strategy is ${activeStrategy}`);
     if (r.strategyConfigSha256 !== currentSha) out.push('config/strategy.json changed since the gate ran');
-    if (now - Date.parse(r.createdAt) > GATE_CRITERIA.maxAgeDays * 86_400_000) out.push(`gate result older than ${GATE_CRITERIA.maxAgeDays} days`);
+    if (now - Date.parse(r.createdAt) > GATE_CRITERIA.maxAgeDays * 86_400_000)
+      out.push(`gate result older than ${GATE_CRITERIA.maxAgeDays} days`);
     return out;
   } catch (e) {
     return [`gate result unreadable: ${String(e)}`];

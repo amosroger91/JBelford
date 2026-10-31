@@ -60,7 +60,13 @@ export function authorizationPath(stateDir: string): string {
   return join(stateDir, 'live-authorization.json');
 }
 
-export function writeAuthorization(stateDir: string, exchange: string, operator: string, hours: number, now = Date.now()): LiveAuthorizationFile {
+export function writeAuthorization(
+  stateDir: string,
+  exchange: string,
+  operator: string,
+  hours: number,
+  now = Date.now(),
+): LiveAuthorizationFile {
   if (!(hours > 0 && hours <= MAX_AUTHORIZATION_HOURS)) throw new Error(`hours must be in (0, ${MAX_AUTHORIZATION_HOURS}]`);
   const auth: LiveAuthorizationFile = {
     version: 1,

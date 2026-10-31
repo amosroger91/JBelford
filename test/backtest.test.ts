@@ -62,7 +62,11 @@ describe('backtester', () => {
   it('zero-fee runs are never worse than fee runs', () => {
     const p = { ...PARAMS, minRocPct: 0.05, volMult: 0.8, minNetTargetPct: 0 };
     const withFees = runBacktest(candles, { ...base, strategy: new MomentumStrategy(p, FEES) });
-    const noFees = runBacktest(candles, { ...base, fees: { maker: 0, taker: 0 }, strategy: new MomentumStrategy(p, { maker: 0, taker: 0 }) });
+    const noFees = runBacktest(candles, {
+      ...base,
+      fees: { maker: 0, taker: 0 },
+      strategy: new MomentumStrategy(p, { maker: 0, taker: 0 }),
+    });
     expect(noFees.grossPnl).toBeGreaterThanOrEqual(withFees.grossPnl - 1e-9);
   });
 
@@ -76,13 +80,19 @@ describe('backtester', () => {
 describe('optimizer', () => {
   it('filters invalid combos and reports out-of-sample + walk-forward', () => {
     expect(gridCombos('momentum', PARAMS, { trendEmaFast5m: [9, 30], trendEmaSlow5m: [21] })).toHaveLength(1);
-    const res = optimize(synthetic(15_000, 3), 'momentum', PARAMS, { minRocPct: [0.05, 0.15], volMult: [0.8, 1.5] }, {
-      ...base,
-      inSampleFraction: 0.7,
-      minTrades: 1,
-      topK: 2,
-      folds: 2,
-    });
+    const res = optimize(
+      synthetic(15_000, 3),
+      'momentum',
+      PARAMS,
+      { minRocPct: [0.05, 0.15], volMult: [0.8, 1.5] },
+      {
+        ...base,
+        inSampleFraction: 0.7,
+        minTrades: 1,
+        topK: 2,
+        folds: 2,
+      },
+    );
     expect(res.combos).toBe(4);
     expect(res.ranked.length).toBeLessThanOrEqual(2);
     expect(res.walkForward.folds).toHaveLength(2);

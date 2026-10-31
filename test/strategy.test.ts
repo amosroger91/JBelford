@@ -21,7 +21,12 @@ describe('indicators', () => {
 
   it('maps each 1m bar to the last COMPLETED 5m bar', () => {
     const s = new MomentumStrategy(PARAMS, FEES);
-    const p = s.prepare(candlesFromCloses(Array.from({ length: 12 }, (_, i) => 100 + i), T0));
+    const p = s.prepare(
+      candlesFromCloses(
+        Array.from({ length: 12 }, (_, i) => 100 + i),
+        T0,
+      ),
+    );
     // bars 0..3 -> no complete 5m bar; bar 4 closes the first bucket
     expect(Array.from(p.map5.slice(0, 6))).toEqual([-1, -1, -1, -1, 0, 0]);
     expect(p.map5[9]).toBe(1);
@@ -71,7 +76,12 @@ describe('MomentumStrategy', () => {
     const s = new MomentumStrategy(PARAMS, FEES);
     const closes = Array.from({ length: 200 }, (_, i) => 80000 * (1 - 0.0003 * i));
     closes.push(closes.at(-1)! * 1.003);
-    const c = candlesFromCloses(closes, T0, 1, closes.map((_, i) => (i === closes.length - 1 ? 5 : 1)));
+    const c = candlesFromCloses(
+      closes,
+      T0,
+      1,
+      closes.map((_, i) => (i === closes.length - 1 ? 5 : 1)),
+    );
     expect(s.signalAt(s.prepare(c), c.length - 1, 1).reasons).toContain('5m trend not up');
   });
 

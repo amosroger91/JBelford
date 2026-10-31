@@ -56,13 +56,7 @@ export interface Balance {
 export type OrderPurpose = 'entry' | 'take_profit' | 'stop' | 'flatten';
 
 /** Local, persisted view of an order. */
-export type LocalOrderStatus =
-  | 'pending_submit'
-  | 'open'
-  | 'filled'
-  | 'canceled'
-  | 'rejected'
-  | 'unknown';
+export type LocalOrderStatus = 'pending_submit' | 'open' | 'filled' | 'canceled' | 'rejected' | 'unknown';
 
 export interface OrderRecord {
   clientOrderId: string;
