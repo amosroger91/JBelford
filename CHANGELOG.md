@@ -2,6 +2,16 @@
 
 All notable changes to this project are recorded here (plus full history in git).
 
+## 0.3.1 (2026-10-31): logo and README
+
+### Added
+- Project logo (`docs/assets/logo.png`, plus a 64px icon at `docs/assets/logo-64.png`).
+
+### Changed
+- README rewritten: status at a glance, full feature list (strategies, validation pipeline,
+  execution and safety, market context, Claude supervisor, monitoring), architecture, hard limits,
+  gate criteria, commands, configuration, live-trading gates, layout and version history.
+
 ## 0.3.0 (2026-10-31): intraday redesign, promotion gate, market context
 
 ### Changed
