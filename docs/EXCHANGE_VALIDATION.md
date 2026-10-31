@@ -81,6 +81,18 @@ same bar; taker exits pay spread plus slippage.
 combination lost money **in-sample**, before any out-of-sample test. Best out-of-sample: −$1.50 over 15
 trades. Walk-forward total: **−$3.05 over 27 trades**.
 
+**Overfitting diagnostics (108 trials that traded ≥ 8 times, daily P&L, CSCV with 8 blocks / 70 splits):**
+
+| Metric | Value | Meaning |
+|---|---|---|
+| Probability of Backtest Overfitting | 0% | Ranking is stable: the least-bad combo in-sample stays least-bad out-of-sample |
+| In-sample winner lost money out-of-sample | 100% of splits | ...but even the best combo loses on unseen data |
+| Best Sharpe (per day) | −0.81 | vs. +0.73 expected from luck alone across 108 trials |
+| Deflated Sharpe Ratio | 0% | Want > 95% before believing an edge exists |
+
+Low PBO is not a green light. It measures whether *selection* generalizes, not whether the selected
+strategy makes money. Read it alongside the out-of-sample loss rate and the DSR.
+
 Conclusion: with Tier-1 fees this strategy has **no demonstrated edge**. Gross P&L is negative even
 before fees, and fees alone exceed any plausible scalping edge at this size. The system is built to
 keep testing; it is not evidence that live trading would be profitable.

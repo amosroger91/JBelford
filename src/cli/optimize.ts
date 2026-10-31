@@ -17,6 +17,7 @@ const { values } = parseArgs({
     days: { type: 'string' },
     folds: { type: 'string', default: '3' },
     'min-trades': { type: 'string', default: '8' },
+    'period-hours': { type: 'string', default: '24' },
   },
 });
 
@@ -50,6 +51,7 @@ const res = optimize(candles, base, GRID, {
   minTrades: Number(values['min-trades']),
   topK: 5,
   folds: Number(values.folds),
+  periodHours: Number(values['period-hours']),
 });
 
 const fmt = (s: Summary) => ({
@@ -90,6 +92,27 @@ console.table(
   })),
 );
 console.log(`Walk-forward total: net ${res.walkForward.totalNet.toFixed(4)} USD over ${res.walkForward.totalTrades} trades`);
+const of = res.overfitting;
+console.log(
+  `\nOverfitting diagnostics (${of.trialsUsed} trials with >= ${values['min-trades']} trades, ${of.trialsExcluded} near-inactive excluded, ${of.periodHours}h periods):`,
+);
+if (of.error) console.log(`  unavailable: ${of.error}`);
+console.log('  Low PBO only means the ranking is stable; check the out-of-sample loss rate and Deflated Sharpe for profitability.');
+if (of.pbo) {
+  console.log(
+    `  PBO (CSCV, ${of.pbo.blocks} blocks, ${of.pbo.splits} splits): ${(of.pbo.pbo * 100).toFixed(1)}%  ` +
+      '(chance the in-sample winner ranks below median out-of-sample; above 50% means selection is worse than random)',
+  );
+  console.log(`  In-sample winner lost money out-of-sample in ${(of.pbo.probOosLoss * 100).toFixed(1)}% of splits`);
+}
+if (of.dsr) {
+  const p = of.dsr.params;
+  console.log(
+    `  Best full-sample Sharpe: ${of.dsr.sharpe.toFixed(3)}/period (roc${p.minRocPct} vol${p.volMult} tp${p.takeProfitPct} sl${p.stopLossPct} h${p.maxHoldMinutes}); ` +
+      `luck benchmark for ${of.dsr.trials} trials: ${of.dsr.benchmarkSharpe.toFixed(3)}`,
+  );
+  console.log(`  Probabilistic Sharpe P(SR>0): ${(of.dsr.psr * 100).toFixed(1)}%   Deflated Sharpe: ${(of.dsr.dsr * 100).toFixed(1)}%  (want > 95%)`);
+}
 console.log('\nIn-sample rank is NOT evidence of an edge. Judge by out-of-sample and walk-forward results, and even those do not guarantee live profitability.');
 const path = join(reportsDir, `optimize-${Date.now()}.json`);
 writeFileSync(path, JSON.stringify({ grid: GRID, costs, ...res }, null, 2));

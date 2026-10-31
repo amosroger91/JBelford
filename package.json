@@ -1,6 +1,6 @@
 {
   "name": "jbelford",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Autonomous BTC/USD spot scalping research, backtesting and paper-trading system (paper by default).",
   "scripts": {
     "typecheck": "tsc --noEmit",

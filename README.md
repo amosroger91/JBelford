@@ -77,7 +77,7 @@ Full guide: [`docs/WINDOWS_SETUP.md`](docs/WINDOWS_SETUP.md).
 | `npm run validate:exchange` | Market minimums, precision, WS support, spread, fee economics (public API) |
 | `npm run history:fetch -- --days N` | Cache 1m candles in `data/history.db` |
 | `npm run backtest` | Backtest `config/strategy.json` |
-| `npm run optimize` | Grid search, 70/30 out-of-sample, anchored walk-forward |
+| `npm run optimize` | Grid search, 70/30 out-of-sample, anchored walk-forward, PBO (CSCV) and Deflated Sharpe |
 | `npm run paper [-- --duration 2h]` | Paper trading on live public data |
 | `npm run dashboard [-- --mode live]` | Terminal dashboard: balance, equity, trades, net P&L, fees |
 | `npm run report` | JSON status for Claude/humans |

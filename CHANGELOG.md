@@ -2,6 +2,22 @@
 
 All notable changes to this project are recorded here (plus full history in git).
 
+## 0.2.0 (2026-10-31): overfitting diagnostics
+
+### Added
+- `src/backtest/overfitting.ts`: Probability of Backtest Overfitting via CSCV (Bailey et al. 2014),
+  Probabilistic Sharpe Ratio, and Deflated Sharpe Ratio (Bailey & López de Prado 2014), computed on
+  per-period net P&L across every optimizer trial.
+- `npm run optimize` now prints PBO, the out-of-sample loss rate of the in-sample winner, the
+  best Sharpe vs. the "luck benchmark" for N trials, and PSR/DSR. `--period-hours` sets the period length.
+- Trials with fewer than `--min-trades` trades are excluded from these diagnostics (a do-nothing trial
+  earns $0, beats every loser, and fakes a stable ranking).
+- 12 new tests (95 total), including noise-only and genuine-edge synthetic cases.
+
+### Findings (45 days, 108 active trials)
+- PBO 0%: the ranking is stable, but the in-sample winner lost money out-of-sample in 100% of splits.
+- Best Sharpe −0.81 per day vs. luck benchmark +0.73; Deflated Sharpe 0%. No evidence of an edge.
+
 ## 0.1.0 (2026-10-31): initial paper-trading system
 
 ### Research & validation
