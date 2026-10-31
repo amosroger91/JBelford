@@ -97,6 +97,21 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (exchange, symbol, tf, ts)
   );
   `,
+  `
+  CREATE TABLE IF NOT EXISTS context_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    ts INTEGER NOT NULL,
+    payload TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_context_source_ts ON context_snapshots(source, ts);
+  CREATE TABLE IF NOT EXISTS fear_greed (
+    source TEXT NOT NULL,
+    ts INTEGER NOT NULL,
+    score REAL NOT NULL,
+    PRIMARY KEY (source, ts)
+  );
+  `,
 ];
 
 export function openDb(path: string): DB {

@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { appContext, openModeStore } from './common';
-import { loadStrategyParams } from '../config/load';
+import { loadStrategyConfig } from '../config/load';
 import { RiskEngine } from '../risk/engine';
 import { HARD_LIMITS } from '../risk/limits';
 import { roundTripEconomics } from '../economics/costs';
@@ -16,7 +16,7 @@ import { readKill } from '../safety/killSwitch';
 const { values } = parseArgs({ options: { mode: { type: 'string', default: 'paper' } } });
 const mode = values.mode === 'live' ? 'live' : 'paper';
 const { cfg, stateDir, reportsDir } = appContext();
-const params = loadStrategyParams();
+const strategyConfig = loadStrategyConfig();
 const now = Date.now();
 
 const out: Record<string, unknown> = {
@@ -26,8 +26,8 @@ const out: Record<string, unknown> = {
   symbol: cfg.exchange.symbol,
   fees: cfg.exchange.fees,
   hardLimits: HARD_LIMITS,
-  strategyParams: params,
-  economics: roundTripEconomics(params.takeProfitPct, params.stopLossPct, {
+  strategyConfig,
+  referenceEconomics_1_5pct_target_1pct_stop: roundTripEconomics(1.5, 1.0, {
     fees: cfg.exchange.fees,
     spreadBps: cfg.backtest.spreadBps,
     takerSlippageBps: cfg.backtest.takerSlippageBps,

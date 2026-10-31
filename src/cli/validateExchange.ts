@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import ccxt, { type Exchange } from 'ccxt';
 import { appContext, pct } from './common';
-import { loadStrategyParams } from '../config/load';
 import { HARD_LIMITS } from '../risk/limits';
 import { roundTripEconomics } from '../economics/costs';
 
@@ -18,7 +17,7 @@ const { values } = parseArgs({ options: { exchanges: { type: 'string' } } });
 
 async function main() {
   const { cfg, reportsDir } = appContext();
-  const params = loadStrategyParams();
+  const params = { takeProfitPct: 1.5, stopLossPct: 1.0 }; // reference intraday trade
   const ids = (values.exchanges ?? cfg.exchange.id).split(',').map((s) => s.trim());
   const results: Record<string, unknown>[] = [];
 

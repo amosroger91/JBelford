@@ -1,6 +1,8 @@
 import { parseArgs } from 'node:util';
 import { appContext, openModeStore } from './common';
-import { loadStrategyParams } from '../config/load';
+import { loadStrategyConfig } from '../config/load';
+import { activeStrategy } from '../strategy/registry';
+import { STRATEGY_NAMES, type StrategyName } from '../config/schema';
 import { MarketDataFeed } from '../data/marketData';
 import { PaperAdapter } from '../exec/paperAdapter';
 import { runEngine } from '../exec/runner';
@@ -14,11 +16,13 @@ import { log } from '../core/log';
  *   npm run paper                       run until Ctrl+C
  *   npm run paper -- --duration 30m     run for a fixed time
  *   npm run paper -- --keep-position    on exit, cancel orders but do not flatten
+ *   npm run paper -- --strategy volBreakout   override the active strategy for this run
  */
 const { values } = parseArgs({
   options: {
     duration: { type: 'string' },
     'keep-position': { type: 'boolean', default: false },
+    strategy: { type: 'string' },
   },
 });
 
@@ -36,7 +40,8 @@ async function main() {
     log.error('after investigating, clear it with: npm run halt:reset');
     process.exit(1);
   }
-  const params = loadStrategyParams();
+  if (values.strategy && !STRATEGY_NAMES.includes(values.strategy as StrategyName)) throw new Error(`--strategy must be one of ${STRATEGY_NAMES.join(', ')}`);
+  const strategy = activeStrategy(loadStrategyConfig(), cfg.exchange.fees, values.strategy as StrategyName | undefined);
   const store = openModeStore(stateDir, 'paper');
   const feed = new MarketDataFeed({
     exchangeId: cfg.exchange.id,
@@ -58,7 +63,7 @@ async function main() {
   await runEngine({
     mode: 'paper',
     cfg,
-    params,
+    strategy,
     store,
     stateDir,
     feed,

@@ -39,7 +39,13 @@ npm run validate:exchange
 npm run history:fetch -- --days 45     # downloads 1m BTC/USD candles into data\history.db
 npm run backtest                       # current config\strategy.json
 npm run optimize                       # grid search + out-of-sample + walk-forward
+npm run backtest -- --strategy volBreakout
+npm run gate                           # promotion gate for the active strategy
+npm run context                        # keyless market context snapshot
 ```
+
+Pick the active strategy (`momentum`, `vwapReversion`, `volBreakout`) in `config\strategy.json`,
+or override it for one paper run: `npm run paper -- --strategy vwapReversion`.
 
 Reports are written to `reports\`.
 

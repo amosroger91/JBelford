@@ -1,6 +1,5 @@
 import type { Candle, ExitReason, Fees, MarketInfo, TradeRecord } from '../core/types';
-import type { StrategyParams } from '../config/schema';
-import { MomentumStrategy } from '../strategy/momentum';
+import { exitLevels, type Strategy } from '../strategy/types';
 import { RiskEngine } from '../risk/engine';
 import { HARD_LIMITS } from '../risk/limits';
 import { openDb } from '../persistence/db';
@@ -9,7 +8,15 @@ import { worstCaseLossUsd, type CostModel } from '../economics/costs';
 import { floorToStep, roundToStep, utcDayStart } from '../core/util';
 
 export interface BacktestOptions {
-  params: StrategyParams;
+  strategy: Strategy;
+  /** Reuse a `strategy.prepare(candles)` result (must be for the same candles). */
+  prepared?: object;
+  /**
+   * Random-entry null test: enter at exactly these bar indices instead of on
+   * signals, still subject to the risk engine and using the strategy's own
+   * exit sizing at that bar.
+   */
+  forcedEntries?: Set<number>;
   fees: Fees;
   spreadBps: number;
   takerSlippageBps: number;
@@ -61,19 +68,20 @@ export interface BacktestResult {
 export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResult {
   const store = new Store(openDb(':memory:'));
   const risk = new RiskEngine(store, HARD_LIMITS);
-  const strategy = new MomentumStrategy(o.params, o.fees);
+  const strategy = o.strategy;
+  const ex = strategy.execution;
   const costs: CostModel = { fees: o.fees, spreadBps: o.spreadBps, takerSlippageBps: o.takerSlippageBps };
-  const prepared = strategy.prepare(candles);
+  const prepared = o.prepared ?? strategy.prepare(candles);
   const halfSpread = o.spreadBps / 2 / 10_000;
   const slip = o.takerSlippageBps / 10_000;
-  const timeoutBars = Math.max(1, Math.ceil(o.params.entryTimeoutSec / 60));
+  const timeoutBars = Math.max(1, Math.ceil(ex.entryTimeoutSec / 60));
   const sizeFraction = o.sizeFraction ?? 0.98;
   const resume = o.resumeAfterShutdown ?? true;
 
   let usd = o.startingUsd;
   let btc = 0;
   let pos: { tradeId: string; amount: number; entryPrice: number; entryFee: number; openedAt: number; stop: number; tp: number } | null = null;
-  let pending: { price: number; amount: number; placedIdx: number } | null = null;
+  let pending: { price: number; amount: number; placedIdx: number; exits: { takeProfitPct: number; stopLossPct: number } } | null = null;
   let tradeSeq = 0;
   let signals = 0;
   let placed = 0;
@@ -137,7 +145,7 @@ export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResu
         const fee = pending.amount * pending.price * o.fees.maker;
         usd -= pending.amount * pending.price + fee;
         btc += pending.amount;
-        const lv = strategy.exitLevels(pending.price);
+        const lv = exitLevels(pending.price, pending.exits);
         pos = { tradeId: `bt-${++tradeSeq}`, amount: pending.amount, entryPrice: pending.price, entryFee: fee, openedAt: now, stop: lv.stop, tp: lv.takeProfit };
         pending = null;
         if (c.low <= pos.stop) closeTrade(pos.stop * (1 - halfSpread - slip), o.fees.taker, now, 'stop_loss');
@@ -151,11 +159,12 @@ export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResu
       if (c.open <= p.stop) closeTrade(c.open * (1 - halfSpread - slip), o.fees.taker, now, 'stop_loss');
       else if (c.low <= p.stop) closeTrade(p.stop * (1 - halfSpread - slip), o.fees.taker, now, 'stop_loss');
       else if (c.high > p.tp) closeTrade(p.tp, o.fees.maker, now, 'take_profit');
-      else if (now - p.openedAt >= o.params.maxHoldMinutes * 60_000) closeTrade(c.close * (1 - halfSpread - slip), o.fees.taker, now, 'max_hold');
+      else if (now - p.openedAt >= ex.maxHoldMinutes * 60_000) closeTrade(c.close * (1 - halfSpread - slip), o.fees.taker, now, 'max_hold');
       else if (mustFlatten) closeTrade(c.close * (1 - halfSpread - slip), o.fees.taker, now, 'risk_flatten');
     } else {
-      const sig = strategy.signalAt(prepared, i, o.spreadBps);
-      if (sig.enter) {
+      const forced = o.forcedEntries;
+      const sig = !forced || forced.has(i) ? strategy.signalAt(prepared, i, o.spreadBps) : null;
+      if (sig && (forced || sig.enter)) {
         signals++;
         const price = roundToStep(c.close * (1 - halfSpread), o.market.priceTick);
         const amount = floorToStep((HARD_LIMITS.maxOrderValueUsd * sizeFraction) / price, o.market.amountStep);
@@ -166,7 +175,7 @@ export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResu
           side: 'buy',
           orderValueUsd: value,
           exchangeMinValueUsd: Math.max(o.market.minCost, o.market.minAmount * price),
-          worstCaseLossUsd: worstCaseLossUsd(value, o.params.stopLossPct, costs),
+          worstCaseLossUsd: worstCaseLossUsd(value, sig.exits.stopLossPct, costs),
           dataAgeMs: 0,
           stateCertain: true,
           hasOpenPosition: false,
@@ -174,7 +183,7 @@ export function runBacktest(candles: Candle[], o: BacktestOptions): BacktestResu
         });
         if (d.ok && value * (1 + o.fees.maker) <= usd) {
           placed++;
-          pending = { price, amount, placedIdx: i };
+          pending = { price, amount, placedIdx: i, exits: sig.exits };
         } else {
           blocked++;
         }

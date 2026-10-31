@@ -93,6 +93,19 @@ trades. Walk-forward total: **−$3.05 over 27 trades**.
 Low PBO is not a green light. It measures whether *selection* generalizes, not whether the selected
 strategy makes money. Read it alongside the out-of-sample loss rate and the DSR.
 
+**v0.3 intraday strategies, promotion gate (`npm run gate`):**
+
+| Strategy | Trades | Avg hold | Net | Gross | Walk-forward | Random-entry p | Gate |
+|---|---|---|---|---|---|---|---|
+| momentum (1m, 5m trend) | 91 | 89 min | −$11.68 | −$1.23 | −$3.28 / 28 trades | 0.86 | FAIL |
+| vwapReversion | 7 | 207 min | −$1.05 | −$0.23 | −$1.40 / 12 trades | 0.79 | FAIL |
+| volBreakout (15m squeeze) | 29 | 185 min | −$3.30 | +$0.03 | −$1.32 / 10 trades | 0.36 | FAIL |
+
+The random-entry test is the most telling: entering at random bars with each strategy's own exits
+loses about **$0.12 per trade**, roughly the round-trip fee cost on a $9.80 order. None of the
+signals does measurably better than random. Volatility breakout came closest: gross P&L was slightly
+positive, but too few trades to judge.
+
 Conclusion: with Tier-1 fees this strategy has **no demonstrated edge**. Gross P&L is negative even
 before fees, and fees alone exceed any plausible scalping edge at this size. The system is built to
 keep testing; it is not evidence that live trading would be profitable.

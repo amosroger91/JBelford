@@ -3,23 +3,32 @@ import { TradingEngine } from '../src/exec/engine';
 import { PaperAdapter } from '../src/exec/paperAdapter';
 import { GuardedAdapter } from '../src/exec/guardedAdapter';
 import { RiskEngine } from '../src/risk/engine';
-import { MomentumStrategy, type PreparedSeries, type Signal } from '../src/strategy/momentum';
+import type { Signal, Strategy } from '../src/strategy/types';
 import type { Candle } from '../src/core/types';
 import type { Store } from '../src/persistence/store';
 import { FEES, MARKET, PARAMS, memStore, T0 } from './helpers';
 
 /** Strategy whose entry signal the test controls; exits use the real levels. */
-class StubStrategy extends MomentumStrategy {
+class StubStrategy implements Strategy {
+  readonly name = 'momentum' as const;
+  readonly execution = PARAMS;
+  readonly fees = FEES;
   enter = false;
-  override prepare(): PreparedSeries {
-    return {} as PreparedSeries;
+  exits = { takeProfitPct: 1, stopLossPct: 0.5 };
+  warmupBars(): number {
+    return 0;
   }
-  override signalAt(): Signal {
-    return { enter: this.enter, reasons: this.enter ? [] : ['stub'], metrics: {} };
+  prepare(): object {
+    return {};
+  }
+  signalAt(): Signal {
+    return { enter: this.enter, reasons: this.enter ? [] : ['stub'], metrics: {}, exits: this.exits };
   }
 }
 
-function harness(opts: { store?: Store; faults?: { ambiguousCreateRate: number; rejectRate: number }; seed?: number; now?: number } = {}) {
+function harness(
+  opts: { store?: Store; faults?: { ambiguousCreateRate: number; rejectRate: number }; seed?: number; now?: number; veto?: () => string | null } = {},
+) {
   const clock = { now: opts.now ?? T0 + 3_600_000 };
   const store = opts.store ?? memStore();
   const risk = new RiskEngine(store);
@@ -34,7 +43,7 @@ function harness(opts: { store?: Store; faults?: { ambiguousCreateRate: number; 
   });
   let bid = 77000;
   const guarded = new GuardedAdapter(paper, risk, store, () => bid, () => clock.now);
-  const strategy = new StubStrategy(PARAMS, FEES);
+  const strategy = new StubStrategy();
   let killed = false;
   const engine = new TradingEngine(store, risk, guarded, strategy, { fees: FEES, spreadBps: 1, takerSlippageBps: 5 }, {
     mode: 'paper',
@@ -43,6 +52,7 @@ function harness(opts: { store?: Store; faults?: { ambiguousCreateRate: number; 
     balanceSnapshotMs: 60_000,
     now: () => clock.now,
     killSwitch: () => killed,
+    entryVeto: opts.veto,
   });
   const candles: Candle[] = [];
   const h = {
@@ -273,6 +283,29 @@ describe('TradingEngine (paper) lifecycle', () => {
     await h2.tick();
     expect(h2.engine.isStateCertain()).toBe(false);
     expect(h2.risk.activeHalt(h2.clock.now)?.reason).toMatch(/balance/);
+  });
+
+  it('applies the exits chosen at signal time to the actual fill price', async () => {
+    const h = harness();
+    h.strategy.exits = { takeProfitPct: 2.5, stopLossPct: 1.2 };
+    await h.enterAndFill(77000);
+    const pos = h.store.openPosition()!;
+    expect(pos.takeProfitPrice).toBeCloseTo(77000 * 1.025, 6);
+    expect(pos.stopPrice).toBeCloseTo(77000 * 0.988, 6);
+    // the 1.2% stop is wider than the old fixed 0.5%: a 0.6% dip must NOT stop out
+    h.advance(60_000);
+    h.book(76540);
+    await h.tick();
+    expect(h.store.openPosition()).toBeDefined();
+  });
+
+  it('a market-context veto blocks new entries', async () => {
+    const h = harness({ veto: () => 'price diverges from binance.us by 80bps' });
+    h.book(77000);
+    h.strategy.enter = true;
+    await h.tick();
+    expect(h.store.recentOrders()).toHaveLength(0);
+    expect(h.store.recentEvents(5).some((e) => e.msg.includes('vetoed'))).toBe(true);
   });
 
   it('never places more than one entry while one is working', async () => {

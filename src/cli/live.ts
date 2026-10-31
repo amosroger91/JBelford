@@ -1,5 +1,6 @@
 import { appContext, openModeStore } from './common';
-import { loadStrategyParams } from '../config/load';
+import { loadStrategyConfig } from '../config/load';
+import { activeStrategy } from '../strategy/registry';
 import { verifyLiveGate } from '../safety/liveGate';
 import { LiveAdapter } from '../exec/liveAdapter';
 import { MarketDataFeed } from '../data/marketData';
@@ -19,7 +20,7 @@ async function main() {
     for (const r of gate.reasons) console.error(`  - ${r}`);
     process.exit(1);
   }
-  const params = loadStrategyParams();
+  const strategy = activeStrategy(loadStrategyConfig(), cfg.exchange.fees);
   const store = openModeStore(stateDir, 'live');
   const adapter = new LiveAdapter(gate.authorization, cfg.exchange.id, cfg.exchange.symbol);
   await adapter.init();
@@ -31,7 +32,7 @@ async function main() {
     candlePollIntervalMs: cfg.marketData.candlePollIntervalMs,
     bootstrapCandles: cfg.marketData.bootstrapCandles,
   });
-  await runEngine({ mode: 'live', cfg, params, store, stateDir, feed, market: adapter.marketInfo(), adapter, flattenOnExit: true });
+  await runEngine({ mode: 'live', cfg, strategy, store, stateDir, feed, market: adapter.marketInfo(), adapter, flattenOnExit: true });
   store.db.close();
 }
 

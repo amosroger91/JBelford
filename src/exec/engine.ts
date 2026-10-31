@@ -1,7 +1,7 @@
 import type { Candle, ExitReason, OrderPurpose, OrderRecord, PositionRecord, Side, TopOfBook, TradeRecord } from '../core/types';
 import type { Store } from '../persistence/store';
 import type { RiskEngine } from '../risk/engine';
-import type { MomentumStrategy } from '../strategy/momentum';
+import { exitLevels, type Exits, type Strategy } from '../strategy/types';
 import type { CostModel } from '../economics/costs';
 import { worstCaseLossUsd } from '../economics/costs';
 import { AmbiguousOrderError, OrderRejectedError, RiskViolationError, type ExchangeAdapter } from './adapter';
@@ -18,11 +18,15 @@ export interface EngineOptions {
   now?: () => number;
   /** Returns true when the emergency kill switch has been triggered. */
   killSwitch?: () => boolean;
+  /** Optional data-quality veto on NEW entries (e.g. cross-exchange price divergence). Returns a reason or null. */
+  entryVeto?: (now: number, book: TopOfBook) => string | null;
 }
 
 export type EnginePhase = 'FLAT' | 'ENTRY_PENDING' | 'LONG' | 'EXIT_PENDING' | 'STOPPED';
 
 const EXIT_REASON_KEY = (tradeId: string) => `exitReason:${tradeId}`;
+/** Exit distances chosen at signal time, applied to the actual fill price. */
+const EXITS_KEY = (tradeId: string) => `exits:${tradeId}`;
 const BASELINE_BTC_KEY = 'baselineBtc';
 const EPS = 1e-10;
 
@@ -49,7 +53,7 @@ export class TradingEngine {
     private readonly store: Store,
     private readonly risk: RiskEngine,
     private readonly adapter: ExchangeAdapter,
-    private readonly strategy: MomentumStrategy,
+    private readonly strategy: Strategy,
     private readonly costs: CostModel,
     private readonly opts: EngineOptions,
   ) {
@@ -172,6 +176,11 @@ export class TradingEngine {
     const prepared = this.strategy.prepare(this.candles);
     const sig = this.strategy.signalAt(prepared, this.candles.length - 1, spreadBps);
     if (!sig.enter) return;
+    const veto = this.opts.entryVeto?.(now, this.book);
+    if (veto) {
+      this.event('warn', 'entry signal vetoed by market-context check', { reason: veto });
+      return;
+    }
 
     const m = this.adapter.marketInfo();
     const price = roundToStep(bid, m.priceTick);
@@ -184,7 +193,7 @@ export class TradingEngine {
       side: 'buy',
       orderValueUsd: value,
       exchangeMinValueUsd: Math.max(m.minCost, m.minAmount * price),
-      worstCaseLossUsd: worstCaseLossUsd(value, this.strategy.params.stopLossPct, this.costs),
+      worstCaseLossUsd: worstCaseLossUsd(value, sig.exits.stopLossPct, this.costs),
       dataAgeMs: dataAge,
       stateCertain: this.stateCertain,
       hasOpenPosition: !!this.store.openPosition(),
@@ -199,12 +208,14 @@ export class TradingEngine {
       this.event('warn', 'entry skipped: insufficient USD', { usd: bal.usd, value });
       return;
     }
-    this.event('info', 'entry signal', { price, amount, metrics: sig.metrics });
-    await this.submit(newTradeId(), 'entry', 'buy', 'limit', amount, price, true);
+    this.event('info', `entry signal (${this.strategy.name})`, { price, amount, exits: sig.exits, metrics: sig.metrics });
+    const tradeId = newTradeId();
+    this.store.setKv(EXITS_KEY(tradeId), sig.exits, now);
+    await this.submit(tradeId, 'entry', 'buy', 'limit', amount, price, true);
   }
 
   private async manageEntry(entry: OrderRecord, now: number): Promise<void> {
-    const timeoutMs = this.strategy.params.entryTimeoutSec * 1000;
+    const timeoutMs = this.strategy.execution.entryTimeoutSec * 1000;
     if (entry.status === 'open' && now - entry.createdAt >= timeoutMs) {
       this.event('info', 'entry timed out unfilled; canceling', { clientOrderId: entry.clientOrderId, filled: entry.filled });
       await this.cancelAndSync(entry);
@@ -243,7 +254,7 @@ export class TradingEngine {
     let reason: ExitReason | null = null;
     if (riskCheck.mustFlatten) reason = 'risk_flatten';
     else if (bid <= pos.stopPrice) reason = 'stop_loss';
-    else if (now - pos.openedAt >= this.strategy.params.maxHoldMinutes * 60_000) reason = 'max_hold';
+    else if (now - pos.openedAt >= this.strategy.execution.maxHoldMinutes * 60_000) reason = 'max_hold';
 
     const tp = this.store.openOrders().find((o) => o.purpose === 'take_profit');
     if (reason) {
@@ -420,7 +431,13 @@ export class TradingEngine {
   private onEntryFill(o: OrderRecord): void {
     const existing = this.store.openPosition();
     const avg = o.avgPrice ?? o.price ?? 0;
-    const levels = this.strategy.exitLevels(avg);
+    let exits = this.store.getKv<Exits>(EXITS_KEY(o.tradeId));
+    if (!exits) {
+      // Should not happen (exits are persisted before the entry is sent); fall back to a tight stop.
+      exits = { takeProfitPct: 1, stopLossPct: 0.5 };
+      this.event('warn', 'exit plan missing for trade; using fallback 1% / 0.5%', { tradeId: o.tradeId });
+    }
+    const levels = exitLevels(avg, exits);
     this.store.upsertPosition({
       tradeId: o.tradeId,
       symbol: o.symbol,
@@ -466,6 +483,7 @@ export class TradingEngine {
     };
     this.store.closePositionWithTrade(trade);
     this.store.deleteKv(EXIT_REASON_KEY(tradeId));
+    this.store.deleteKv(EXITS_KEY(tradeId));
     this.event('info', `trade closed: ${reason}`, { tradeId, netPnl: Number(trade.netPnl.toFixed(4)) });
     this.risk.onTradeClosed(trade, this.now());
   }

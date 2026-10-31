@@ -1,6 +1,21 @@
 {
   "author": "claude",
   "createdAt": "2026-10-31T00:00:00Z",
-  "rationale": "Example only. Stricter momentum and volume filters ranked best in-sample, but they still lost money out-of-sample (see docs/EXCHANGE_VALIDATION.md).",
-  "changes": { "minRocPct": 0.25, "volMult": 2.5, "maxHoldMinutes": 180 }
+  "rationale": "Example only. Restrict breakout entries to US/EU overlap hours and require a tighter squeeze. Must pass npm run gate before it could ever be authorized.",
+  "strategy": "volBreakout",
+  "changes": {
+    "squeezePercentile": 15,
+    "allowedHoursUtc": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ]
+  },
+  "activate": false
 }

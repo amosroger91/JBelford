@@ -1,7 +1,7 @@
 {
   "name": "jbelford",
-  "version": "0.2.0",
-  "description": "Autonomous BTC/USD spot scalping research, backtesting and paper-trading system (paper by default).",
+  "version": "0.3.0",
+  "description": "Intraday BTC/USD spot research, backtesting and paper-trading system (paper by default).",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -18,7 +18,9 @@
     "report": "node --disable-warning=ExperimentalWarning --import tsx src/cli/report.ts",
     "proposal": "node --disable-warning=ExperimentalWarning --import tsx src/cli/proposal.ts",
     "live:authorize": "node --disable-warning=ExperimentalWarning --import tsx src/cli/liveAuthorize.ts",
-    "live": "node --disable-warning=ExperimentalWarning --import tsx src/cli/live.ts"
+    "live": "node --disable-warning=ExperimentalWarning --import tsx src/cli/live.ts",
+    "gate": "node --disable-warning=ExperimentalWarning --import tsx src/cli/gate.ts",
+    "context": "node --disable-warning=ExperimentalWarning --import tsx src/cli/context.ts"
   },
   "repository": {
     "type": "git",

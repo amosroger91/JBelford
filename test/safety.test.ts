@@ -8,8 +8,7 @@ import { clearKill, isKillActive, triggerKill } from '../src/safety/killSwitch';
 import { redact, registerSecret } from '../src/core/log';
 import { checkProposal } from '../src/supervisor/proposals';
 import { AppConfigSchema } from '../src/config/schema';
-import { loadAppConfig } from '../src/config/load';
-import { PARAMS } from './helpers';
+import { loadAppConfig, loadStrategyConfig } from '../src/config/load';
 
 describe('live gate', () => {
   it('live stage is disabled in this build', () => {
@@ -57,23 +56,41 @@ describe('secret redaction', () => {
 });
 
 describe('Claude proposals cannot touch risk or mode', () => {
-  const p = (changes: Record<string, number>) => ({ author: 'claude', createdAt: '2026-10-31', rationale: 'testing proposal bounds', changes });
+  const current = loadStrategyConfig();
+  const p = (changes: Record<string, number | number[]>, extra: Record<string, unknown> = {}) => ({
+    author: 'claude',
+    createdAt: '2026-10-31',
+    rationale: 'testing proposal bounds',
+    strategy: 'momentum',
+    changes,
+    ...extra,
+  });
 
   it('accepts in-bounds strategy changes', () => {
-    const r = checkProposal(p({ minRocPct: 0.2, volMult: 2 }), PARAMS);
+    const r = checkProposal(p({ minRocPct: 0.2, volMult: 2 }), current);
     expect(r.ok).toBe(true);
-    expect(r.merged?.minRocPct).toBe(0.2);
+    expect(r.merged?.momentum.minRocPct).toBe(0.2);
+    expect(r.merged?.active).toBe(current.active);
   });
 
-  it.each(['maxOrderValueUsd', 'maxDailyLossUsd', 'maxConsecutiveLosses', 'cooldownMs', 'liveTrading', 'leverage'])('rejects %s', (key) => {
-    const r = checkProposal(p({ [key]: 999 }), PARAMS);
+  it('can switch the active strategy and edit allowed hours', () => {
+    const r = checkProposal(p({ allowedHoursUtc: [13, 14, 15] }, { strategy: 'volBreakout', activate: true }), current);
+    expect(r.ok).toBe(true);
+    expect(r.merged?.active).toBe('volBreakout');
+    expect(r.merged?.volBreakout.allowedHoursUtc).toEqual([13, 14, 15]);
+  });
+
+  it.each(['maxOrderValueUsd', 'maxDailyLossUsd', 'maxConsecutiveLosses', 'cooldownMs', 'liveTrading', 'leverage', 'minDeflatedSharpe'])('rejects %s', (key) => {
+    const r = checkProposal(p({ [key]: 999 }), current);
     expect(r.ok).toBe(false);
-    expect(r.errors.join()).toMatch(/not a strategy parameter/);
+    expect(r.errors.join()).toMatch(/not a momentum parameter/);
   });
 
-  it('rejects out-of-bounds values and extra top-level fields', () => {
-    expect(checkProposal(p({ stopLossPct: 50 }), PARAMS).ok).toBe(false);
-    expect(checkProposal({ ...p({ minRocPct: 0.2 }), mode: 'live' }, PARAMS).ok).toBe(false);
+  it('rejects out-of-bounds values, multi-day holds, unknown strategies and extra top-level fields', () => {
+    expect(checkProposal(p({ stopLossPct: 50 }), current).ok).toBe(false);
+    expect(checkProposal(p({ maxHoldMinutes: 2880 }), current).ok).toBe(false);
+    expect(checkProposal(p({ minRocPct: 0.2 }, { strategy: 'martingale' }), current).ok).toBe(false);
+    expect(checkProposal({ ...p({ minRocPct: 0.2 }), mode: 'live' }, current).ok).toBe(false);
   });
 
   it('app config has no risk-limit or live-mode settings at all', () => {

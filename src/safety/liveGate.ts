@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { PROJECT_ROOT, APP_CONFIG_PATH, STRATEGY_CONFIG_PATH } from '../config/load';
+import { PROJECT_ROOT, APP_CONFIG_PATH, STRATEGY_CONFIG_PATH, loadStrategyConfig } from '../config/load';
+import { gateBlockers } from '../backtest/gate';
 import { isKillActive } from './killSwitch';
 
 /**
@@ -29,6 +30,7 @@ export const FINGERPRINTED_FILES = [
   'src/exec/engine.ts',
   'src/exec/liveAdapter.ts',
   'src/safety/liveGate.ts',
+  'src/backtest/gate.ts',
 ] as const;
 
 export function sha256File(path: string): string {
@@ -107,6 +109,11 @@ export function verifyLiveGate(opts: { stateDir: string; exchangeId: string; env
   if (env.JB_TRADING_MODE !== 'live') reasons.push('JB_TRADING_MODE is not "live"');
   if (!env.JB_API_KEY || !env.JB_API_SECRET) reasons.push('JB_API_KEY / JB_API_SECRET not set in environment');
   if (isKillActive(opts.stateDir)) reasons.push('kill switch is active');
+  try {
+    reasons.push(...gateBlockers(opts.stateDir, loadStrategyConfig().active, sha256File(STRATEGY_CONFIG_PATH), now));
+  } catch (e) {
+    reasons.push(`strategy config invalid: ${String(e)}`);
+  }
 
   const path = authorizationPath(opts.stateDir);
   let expiresAt = 0;

@@ -8,9 +8,9 @@
       "source": "Kraken spot fee schedule, Tier 1 ($0+ 30-day volume), verified 2026-10-31 at https://www.kraken.com/features/fee-schedule"
     },
     "fallback": {
-      "minAmount": 0.00006,
+      "minAmount": 6e-05,
       "minCost": 0.5,
-      "amountStep": 1e-8,
+      "amountStep": 1e-08,
       "priceTick": 0.1
     }
   },
@@ -34,6 +34,15 @@
     "takerSlippageBps": 5,
     "startingUsd": 50,
     "inSampleFraction": 0.7
+  },
+  "marketContext": {
+    "enabled": true,
+    "binanceBaseUrl": "https://api.binance.us",
+    "exchangePollMs": 15000,
+    "coinpaprikaPollMs": 300000,
+    "fearGreedPollMs": 3600000,
+    "maxDivergenceBps": 50,
+    "maxReferenceAgeMs": 60000
   },
   "paths": {
     "stateDir": "state",

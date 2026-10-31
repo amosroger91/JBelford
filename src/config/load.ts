@@ -1,6 +1,6 @@
 import { readFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { AppConfigSchema, StrategyParamsSchema, type AppConfig, type StrategyParams } from './schema';
+import { AppConfigSchema, StrategyConfigSchema, type AppConfig, type StrategyConfig } from './schema';
 
 export const PROJECT_ROOT = resolve(import.meta.dirname, '..', '..');
 export const APP_CONFIG_PATH = resolve(PROJECT_ROOT, 'config', 'default.json');
@@ -14,8 +14,8 @@ export function loadAppConfig(path = APP_CONFIG_PATH): AppConfig {
   return AppConfigSchema.parse(readJson(path));
 }
 
-export function loadStrategyParams(path = STRATEGY_CONFIG_PATH): StrategyParams {
-  return StrategyParamsSchema.parse(readJson(path));
+export function loadStrategyConfig(path = STRATEGY_CONFIG_PATH): StrategyConfig {
+  return StrategyConfigSchema.parse(readJson(path));
 }
 
 export function resolvePath(p: string): string {

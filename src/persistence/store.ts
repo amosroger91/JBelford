@@ -258,6 +258,34 @@ export class Store {
     }[];
   }
 
+  // ---- market context ----
+  insertContext(source: string, ts: number, payload: unknown): void {
+    this.db.prepare('INSERT INTO context_snapshots (source, ts, payload) VALUES (?, ?, ?)').run(source, ts, JSON.stringify(payload));
+  }
+
+  latestContext<T>(source: string): { ts: number; payload: T } | undefined {
+    const r = this.db.prepare('SELECT ts, payload FROM context_snapshots WHERE source = ? ORDER BY id DESC LIMIT 1').get(source) as
+      | { ts: number; payload: string }
+      | undefined;
+    return r ? { ts: r.ts, payload: JSON.parse(r.payload) as T } : undefined;
+  }
+
+  upsertFearGreed(source: string, points: { ts: number; score: number }[]): void {
+    const stmt = this.db.prepare(
+      'INSERT INTO fear_greed (source, ts, score) VALUES (?, ?, ?) ON CONFLICT(source, ts) DO UPDATE SET score = excluded.score',
+    );
+    inTransaction(this.db, () => {
+      for (const p of points) stmt.run(source, p.ts, p.score);
+    });
+  }
+
+  fearGreedSeries(source: string, from = 0): { ts: number; score: number }[] {
+    return this.db.prepare('SELECT ts, score FROM fear_greed WHERE source = ? AND ts >= ? ORDER BY ts').all(source, from) as {
+      ts: number;
+      score: number;
+    }[];
+  }
+
   // ---- candles (history cache) ----
   upsertCandles(exchange: string, symbol: string, tf: string, candles: Candle[]): void {
     const stmt = this.db.prepare(

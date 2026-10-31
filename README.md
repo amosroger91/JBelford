@@ -1,7 +1,7 @@
-# JBelford: BTC/USD spot scalping research & paper trading
+# JBelford: intraday BTC/USD research & paper trading
 
-A TypeScript system for researching, backtesting and **paper trading** short-term BTC/USD spot
-strategies, sized for an eventual $25–$50 account. Paper trading is the default and the only
+A TypeScript system for researching, backtesting and **paper trading** intraday BTC/USD spot
+strategies (holds of minutes to hours, 12 hours at most), sized for an eventual $25–$50 account. Paper trading is the default and the only
 enabled mode. **Live trading is disabled in this build** (see `docs/LIVE_ACTIVATION.md`).
 
 > **Read this first: current findings.** At Kraken's verified Tier-1 fees (0.40% maker / 0.80% taker),
@@ -9,6 +9,10 @@ enabled mode. **Live trading is disabled in this build** (see `docs/LIVE_ACTIVAT
 > **~90% win rate** to break even. On 45 days of 1-minute data, the baseline lost $11.68 of $50 and
 > **every one of 162 parameter combinations lost money**, including out-of-sample and walk-forward.
 > Details: [`docs/EXCHANGE_VALIDATION.md`](docs/EXCHANGE_VALIDATION.md).
+>
+> **v0.3 intraday strategies:** momentum, VWAP reversion and volatility breakout all **fail the
+> promotion gate**. None beats random entries with the same exits (p = 0.86 / 0.79 / 0.36). Random
+> entries lose about $0.12/trade, roughly the fee cost of a round trip. See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Architecture
 
@@ -18,11 +22,13 @@ enabled mode. **Live trading is disabled in this build** (see `docs/LIVE_ACTIVAT
  (advisor)  └──────────────────────────────┘
     │ writes proposals/*.json (strategy params only; human applies)
     ▼
-┌────────────┐  book/candles  ┌─────────────────┐ signal ┌──────────────┐
-│ MarketData │───────────────▶│ TradingEngine   │◀───────│ Momentum     │
-│ WS + poll  │                │ state machine,  │        │ strategy     │
-└────────────┘                │ reconciliation  │        └──────────────┘
-                              └───────┬─────────┘
+┌────────────┐  book/candles  ┌─────────────────┐ signal ┌──────────────────────┐
+│ MarketData │───────────────▶│ TradingEngine   │◀───────│ Strategy (pluggable) │
+│ WS + poll  │                │ state machine,  │        │ momentum, vwapRev.,  │
+└────────────┘                │ reconciliation  │        │ volBreakout          │
+┌────────────┐  entry veto    │                 │        └──────────────────────┘
+│ Context    │───────────────▶│                 │
+│ APIs       │                └───────┬─────────┘
                        evaluateEntry  │  every order
                      ┌────────────────▼───────────────┐
                      │ RiskEngine (hard limits, code) │
@@ -76,8 +82,10 @@ Full guide: [`docs/WINDOWS_SETUP.md`](docs/WINDOWS_SETUP.md).
 |---|---|
 | `npm run validate:exchange` | Market minimums, precision, WS support, spread, fee economics (public API) |
 | `npm run history:fetch -- --days N` | Cache 1m candles in `data/history.db` |
-| `npm run backtest` | Backtest `config/strategy.json` |
-| `npm run optimize` | Grid search, 70/30 out-of-sample, anchored walk-forward, PBO (CSCV) and Deflated Sharpe |
+| `npm run backtest [-- --strategy volBreakout]` | Backtest one strategy |
+| `npm run optimize [-- --strategy X]` | Grid search, 70/30 out-of-sample, anchored walk-forward, PBO (CSCV) and Deflated Sharpe |
+| `npm run gate [-- --strategy X]` | Promotion gate (all checks + random-entry test). Live authorization requires a PASS |
+| `npm run context` | Market context: CoinPaprika, Binance.US, Kraken, Fear & Greed (keyless) |
 | `npm run paper [-- --duration 2h]` | Paper trading on live public data |
 | `npm run dashboard [-- --mode live]` | Terminal dashboard: balance, equity, trades, net P&L, fees |
 | `npm run report` | JSON status for Claude/humans |
@@ -92,6 +100,7 @@ Full guide: [`docs/WINDOWS_SETUP.md`](docs/WINDOWS_SETUP.md).
 * [`docs/WINDOWS_SETUP.md`](docs/WINDOWS_SETUP.md): setup, running, scheduling
 * [`docs/LIVE_ACTIVATION.md`](docs/LIVE_ACTIVATION.md): gated live procedure (requires the owner's authorization)
 * [`docs/CLAUDE_SUPERVISOR.md`](docs/CLAUDE_SUPERVISOR.md): what Claude may and may not do
+* [`docs/MARKET_CONTEXT.md`](docs/MARKET_CONTEXT.md): keyless context APIs and how they're used
 * [`CHANGELOG.md`](CHANGELOG.md): change history
 
 ## Disclaimer

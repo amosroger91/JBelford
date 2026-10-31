@@ -2,6 +2,46 @@
 
 All notable changes to this project are recorded here (plus full history in git).
 
+## 0.3.0 (2026-10-31): intraday redesign, promotion gate, market context
+
+### Changed
+- **Built for intraday (minutes to hours).** Strategies are pluggable (`src/strategy/types.ts`) and
+  every strategy must close positions within 12 hours (`maxHoldMinutes` <= 720, schema-enforced).
+- Exits are chosen per trade at signal time (e.g. ATR- or stretch-sized) and persisted before the
+  entry is sent; the engine and backtester apply them to the actual fill price.
+- `config/strategy.json` now holds every strategy's parameters plus `active`. All strategies share
+  execution settings, including `allowedHoursUtc` (time-of-day filter).
+- Proposals name a `strategy`, may change its parameters (including `allowedHoursUtc`), and may
+  `activate` it. They still cannot touch risk limits, gate criteria, mode, exchange or fees.
+
+### Added
+- `vwapReversion`: buys stretched, high-volume sell-offs below rolling VWAP on the first reversal
+  bar; target sized to the stretch (clamped), fixed stop, crash guard.
+- `volBreakout`: Bollinger-squeeze breakout on 5-60 min bars with volume and optional trend filter;
+  ATR-scaled target and stop.
+- Random-entry null test (`src/backtest/nullTest.ts`): does the entry signal beat random entries
+  with the same exits, fills, fees and risk engine? Statistic: average net P&L per trade.
+- Promotion gate (`npm run gate`, `src/backtest/gate.ts`): walk-forward, out-of-sample, profit
+  factor, Deflated Sharpe, PBO and random-entry p-value. The criteria are compiled constants. **Live
+  authorization now requires a passing gate result** for the exact active strategy config
+  (SHA-256 bound, at most 14 days old).
+- Market-context layer (`src/data/context/`, `npm run context`): CoinPaprika (ticker and BTC market
+  listings), Binance.US public (api.binance.com is geo-blocked from the US), Kraken public, and
+  CoinMarketCap Fear & Greed (keyless website endpoint, with an alternative.me fallback). It provides
+  a price-divergence entry veto, stores snapshots in SQLite, and gives Claude research context.
+- 36 new tests (119 total), including a look-ahead check for every strategy and a test proving the
+  null test detects a real (cheating) edge.
+
+### Findings (45 days, Kraken Tier-1 fees)
+| Strategy | Trades | Avg hold | Net | Gross | Random-entry p | Gate |
+|---|---|---|---|---|---|---|
+| momentum | 91 | 89 min | -$11.68 | -$1.23 | 0.86 | FAIL |
+| vwapReversion | 7 | 207 min | -$1.05 | -$0.23 | 0.79 | FAIL |
+| volBreakout | 29 | 185 min | -$3.30 | +$0.03 | 0.36 | FAIL |
+
+Random entries with the same exits lose about $0.12 per trade, roughly the round-trip cost. No signal
+beats random entries yet.
+
 ## 0.2.0 (2026-10-31): overfitting diagnostics
 
 ### Added

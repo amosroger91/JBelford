@@ -1,13 +1,15 @@
 import { openDb } from '../src/persistence/db';
 import { Store } from '../src/persistence/store';
 import type { Candle, MarketInfo, TradeRecord } from '../src/core/types';
-import type { StrategyParams } from '../src/config/schema';
+import type { MomentumParams } from '../src/config/schema';
 
 export const FEES = { maker: 0.004, taker: 0.008 };
 
 export const MARKET: MarketInfo = { symbol: 'BTC/USD', minAmount: 0.00006, minCost: 0.5, amountStep: 1e-8, priceTick: 0.1 };
 
-export const PARAMS: StrategyParams = {
+export const ALL_HOURS = Array.from({ length: 24 }, (_, h) => h);
+
+export const PARAMS: MomentumParams = {
   emaFast1m: 9,
   rocBars: 3,
   minRocPct: 0.15,
@@ -22,6 +24,7 @@ export const PARAMS: StrategyParams = {
   maxHoldMinutes: 120,
   entryTimeoutSec: 60,
   minNetTargetPct: 0.05,
+  allowedHoursUtc: ALL_HOURS,
 };
 
 export function memStore(): Store {

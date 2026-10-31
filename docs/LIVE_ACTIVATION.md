@@ -10,7 +10,9 @@ the owner has explicitly authorized the live deployment stage in writing.
 2. **Mode:** environment variable `JB_TRADING_MODE=live`.
 3. **Credentials:** `JB_API_KEY` and `JB_API_SECRET` in the environment, never in files that are committed.
 4. **No kill switch:** `state\KILL` must not exist.
-5. **Signed authorization:** `state\live-authorization.json`, created by `npm run live:authorize`:
+5. **Promotion gate passed:** `npm run gate` for the active strategy reports PASS, for the exact
+   current `config/strategy.json` (SHA-256), at most 14 days old.
+6. **Signed authorization:** `state\live-authorization.json`, created by `npm run live:authorize`:
    * only runs in an **interactive terminal** (automation and Claude's tool calls are refused);
    * shows limits, fees and breakeven economics, then requires typing the exact phrase
      `I AUTHORIZE LIVE TRADING ON KRAKEN BTC/USD WITH REAL MONEY`;

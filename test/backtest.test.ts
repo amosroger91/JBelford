@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runBacktest } from '../src/backtest/backtester';
 import { gridCombos, optimize } from '../src/backtest/optimize';
+import { MomentumStrategy } from '../src/strategy/momentum';
 import { makeRng } from '../src/core/util';
 import type { Candle } from '../src/core/types';
 import { FEES, MARKET, PARAMS, T0 } from './helpers';
@@ -30,14 +31,14 @@ describe('backtester', () => {
   const candles = synthetic(20_000, 7);
 
   it('is deterministic', () => {
-    const a = runBacktest(candles, { ...base, params: PARAMS });
-    const b = runBacktest(candles, { ...base, params: PARAMS });
+    const a = runBacktest(candles, { ...base, strategy: new MomentumStrategy(PARAMS, FEES) });
+    const b = runBacktest(candles, { ...base, strategy: new MomentumStrategy(PARAMS, FEES) });
     expect(a.netPnl).toBe(b.netPnl);
     expect(a.trades.length).toBe(b.trades.length);
   });
 
   it('respects the hard limits in simulation', () => {
-    const r = runBacktest(candles, { ...base, params: { ...PARAMS, minRocPct: 0.05, volMult: 0.8 } });
+    const r = runBacktest(candles, { ...base, strategy: new MomentumStrategy({ ...PARAMS, minRocPct: 0.05, volMult: 0.8 }, FEES) });
     expect(r.trades.length).toBeGreaterThan(0);
     const perDay = new Map<number, number>();
     let lastClose = 0;
@@ -53,20 +54,20 @@ describe('backtester', () => {
   });
 
   it('accounts for fees: net = gross - fees', () => {
-    const r = runBacktest(candles, { ...base, params: { ...PARAMS, minRocPct: 0.05, volMult: 0.8 } });
+    const r = runBacktest(candles, { ...base, strategy: new MomentumStrategy({ ...PARAMS, minRocPct: 0.05, volMult: 0.8 }, FEES) });
     expect(r.netPnl).toBeCloseTo(r.grossPnl - r.fees, 9);
     expect(r.finalEquity).toBeCloseTo(50 + r.netPnl, 6);
   });
 
   it('zero-fee runs are never worse than fee runs', () => {
     const p = { ...PARAMS, minRocPct: 0.05, volMult: 0.8, minNetTargetPct: 0 };
-    const withFees = runBacktest(candles, { ...base, params: p });
-    const noFees = runBacktest(candles, { ...base, fees: { maker: 0, taker: 0 }, params: p });
+    const withFees = runBacktest(candles, { ...base, strategy: new MomentumStrategy(p, FEES) });
+    const noFees = runBacktest(candles, { ...base, fees: { maker: 0, taker: 0 }, strategy: new MomentumStrategy(p, { maker: 0, taker: 0 }) });
     expect(noFees.grossPnl).toBeGreaterThanOrEqual(withFees.grossPnl - 1e-9);
   });
 
   it('models non-fills: not every placed entry fills', () => {
-    const r = runBacktest(candles, { ...base, params: { ...PARAMS, minRocPct: 0.05, volMult: 0.8 } });
+    const r = runBacktest(candles, { ...base, strategy: new MomentumStrategy({ ...PARAMS, minRocPct: 0.05, volMult: 0.8 }, FEES) });
     expect(r.entriesPlaced).toBeGreaterThan(0);
     expect(r.entriesFilled).toBeLessThan(r.entriesPlaced);
   });
@@ -74,8 +75,8 @@ describe('backtester', () => {
 
 describe('optimizer', () => {
   it('filters invalid combos and reports out-of-sample + walk-forward', () => {
-    expect(gridCombos(PARAMS, { trendEmaFast5m: [9, 30], trendEmaSlow5m: [21] })).toHaveLength(1);
-    const res = optimize(synthetic(15_000, 3), PARAMS, { minRocPct: [0.05, 0.15], volMult: [0.8, 1.5] }, {
+    expect(gridCombos('momentum', PARAMS, { trendEmaFast5m: [9, 30], trendEmaSlow5m: [21] })).toHaveLength(1);
+    const res = optimize(synthetic(15_000, 3), 'momentum', PARAMS, { minRocPct: [0.05, 0.15], volMult: [0.8, 1.5] }, {
       ...base,
       inSampleFraction: 0.7,
       minTrades: 1,
