@@ -44,6 +44,7 @@ function order(id: string, side: 'buy' | 'sell', qty: string, guard: string, res
 const broker = (participation = '1') =>
   new PaperBroker({
     takerRate: dec('0.009'),
+    makerRate: dec('0.005'),
     participation: dec(participation),
     guardBps: 50,
     baseIncrement: dec('0.00000001'),

@@ -19,6 +19,9 @@ export interface RuleState {
 export interface RuleOutput {
   target: number;
   reason: string;
+  /** Keep whatever is held; place nothing (exits are managed by a bracket). */
+  hold?: boolean;
+  bracket?: import('../domain').BracketSpec;
 }
 
 export type Params = Record<string, number | string | boolean>;
@@ -117,6 +120,40 @@ export const RULES: Record<string, { rule: Rule; warmup: (p: Params) => number; 
       return r <= num(p, 'entry', 25) && c.at(-1)! > trend
         ? { target: 1, reason: 'oversold in uptrend' }
         : { target: 0, reason: 'no setup' };
+    },
+  },
+  capitulation: {
+    description:
+      'Capitulation reversion (research batch-03 candidate): a drop of dropPct over lookback bars, a volume spike >= volMult x the prior day average within the last 4 bars, and a green reversal bar. Enters with a post-only limit at the bid; take-profit / stop / max-hold bracket. Holds otherwise.',
+    defaults: { lookback: 48, dropPct: 3, volMult: 5, tpPct: 1.5, slPct: 3, maxHoldBars: 72, entryOffsetBps: 0, entryValidBars: 6 },
+    warmup: (p) => Math.max(num(p, 'lookback', 48), 288) + 6,
+    rule: (bars, _st, p) => {
+      const n = bars.length;
+      const lb = num(p, 'lookback', 48);
+      if (n < Math.max(lb, 288) + 5) return { target: 0, hold: true, reason: 'warming up' };
+      const c = (i: number) => Number(bars[i]!.close);
+      const ret = (c(n - 1) / c(n - 1 - lb) - 1) * 100;
+      // Volume baseline: mean of the 288 bars ending 4 bars before the current bar (matches research).
+      let vs = 0;
+      for (let k = n - 5 - 287; k <= n - 5; k++) vs += Number(bars[k]!.volume);
+      const base = vs / 288;
+      let spike = 0;
+      for (let k = n - 4; k < n; k++) spike = Math.max(spike, Number(bars[k]!.volume));
+      const green = c(n - 1) > Number(bars[n - 1]!.open);
+      if (ret <= -num(p, 'dropPct', 3) && spike >= num(p, 'volMult', 5) * base && green) {
+        return {
+          target: 1,
+          reason: `capitulation: ${ret.toFixed(2)}% over ${lb} bars, volume ${(spike / base).toFixed(1)}x, reversal bar`,
+          bracket: {
+            entryOffsetBps: num(p, 'entryOffsetBps', 0),
+            entryValidMs: num(p, 'entryValidBars', 6) * 300_000,
+            tpPct: String(num(p, 'tpPct', 1.5)),
+            slPct: String(num(p, 'slPct', 3)),
+            maxHoldMs: num(p, 'maxHoldBars', 72) * 300_000,
+          },
+        };
+      }
+      return { target: 0, hold: true, reason: 'no capitulation setup' };
     },
   },
   sessionMomentum: {

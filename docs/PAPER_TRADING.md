@@ -1,4 +1,4 @@
-# Bitcoin paper trading (Coinbase public data, simulated funds)
+# Bitcoin paper trading (Coinbase or Binance.US public data, simulated funds)
 
 **PAPER — SIMULATED FUNDS.** Real public BTC-USD market data; simulated cash, orders and fills.
 The system requires no exchange credentials and cannot submit real orders.
@@ -27,6 +27,8 @@ node dist/cli.js paper web                                                      
 | `paper replay ID`                                                                                                  | Replay the session's recording into a separate database and compare canonical journal hashes    |
 | `paper replay ID --participation 0.0001`                                                                           | Counterfactual thin-liquidity stress on the recorded data (labelled; not a reproduction)        |
 | `paper report ID [--output DIR]`                                                                                   | Replay check, readiness verdicts, and HTML/JSON/CSV export with an evidence manifest            |
+| `paper history [binanceus]`                                                                                        | Download 5-minute candles into `data/history.db` (Coinbase by default)                          |
+| `paper bracket BATCH`                                                                                              | Run a predeclared bracket research batch (`batch-01`..`batch-04`); writes `artifacts/research/` |
 | `paper research [--days 360]`                                                                                      | Historical screening on Coinbase 5m candles (simplified execution) plus optimization            |
 | `paper web [--port 8787]`                                                                                          | Loopback dashboard with controls                                                                |
 | `paper mcp`                                                                                                        | Opt-in MCP toolset (`paper_start/status/pause/resume/stop/report`)                              |
@@ -44,6 +46,7 @@ To enable the MCP toolset in Claude Code, add this to `.mcp.json` (opt-in):
 | `cash`, `buyHold`, `matchedExposure`                              | controls                 | Buy-and-hold and matched-exposure are clamped to `risk.maxExposure`                                |
 | `smokeProbe`                                                      | infrastructure check     | Alternates 5% long / flat every bar so orders occur. **Not a candidate**                           |
 | `emaTrend`, `donchianBreakout`, `rsiReversion`, `sessionMomentum` | deterministic candidates | Pure rules on completed 5-minute bars; exits after at most 12h                                     |
+| `capitulation`                                                    | bracket candidate        | Drop on a volume spike then a green bar; post-only limit entry with take-profit, stop and max hold |
 | `llm`                                                             | optional candidate       | Claude API (`claude-opus-5-5`); needs `ANTHROPIC_API_KEY`; frozen model; output validated with Zod |
 
 ## Assumptions (all frozen per session and printed in every report)
@@ -104,6 +107,27 @@ npm test                 # all unit + acceptance tests
 npm run test:acceptance  # the plan's 20 adversarial acceptance areas (writes artifacts/acceptance/latest.json)
 npm run test:e2e         # Playwright, desktop + mobile
 ```
+
+## Binance.US and brackets
+
+```powershell
+node dist/cli.js paper start --config config/trading.paper.binanceus-capitulation.yaml --duration 30m
+```
+
+- **Venue:** Binance.US public combined stream (depth@100ms, trades, 5-minute klines). Depth is
+  synced from a REST snapshot; any sequence gap resets the book and blocks trading until resynced.
+  Bars come from the venue's closed klines.
+- **Fees:** 0% maker / 0.02% taker, from Binance.US's published schedule (2026-04-22).
+- **Limit fills (`limit-trade-through-v1`):** a resting buy at L fills only when a trade prints
+  strictly below L (up to that trade's size) or the best ask moves below L. Touching L never fills,
+  because queue position is unknown. Fills happen at L with the maker fee.
+- **Brackets:** entry is a post-only bid at the best bid, valid for `entryValidBars`. On fill a
+  post-only take-profit rests at `tpPct` above the average entry. A stop (`slPct`) or max hold exits
+  at market with the taker fee. Pause and stop cancel resting orders and keep inventory; resuming
+  re-arms the take-profit.
+- Binance.US trades thinly (about one print per 13 seconds), so trade-through fills are rare and the
+  model is deliberately pessimistic.
+- Choosing Binance.US as a real venue (eligibility, custody, regulatory history) is the owner's call.
 
 ## Known limitations
 

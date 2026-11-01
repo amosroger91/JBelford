@@ -2,6 +2,32 @@
 
 All notable changes to this project are recorded here (plus full history in git).
 
+## 0.4.0 (2026-10-31): paper-trading subsystem, profitability research, Binance.US brackets
+
+### Added
+
+- **Event-sourced paper-trading subsystem** (`node dist/cli.js paper ...`, `src/paper/`): exact
+  fixed-point money, SQLite ledger, recorded market events, deterministic replay with canonical
+  journal hashes, readiness verdicts, HTML/JSON/CSV reports, loopback dashboard and opt-in MCP
+  tools. See `docs/PAPER_TRADING.md`.
+- **Profitability research** (`paper history`, `paper bracket <batch>`): predeclared batches over
+  up to 3 years of 5-minute candles with dev/validation/held-out splits, every trial registered,
+  Deflated Sharpe and PBO. About 20,500 trials so far; none passed. See
+  `docs/research/2026-10-31-profitability-search.md`.
+- **Binance.US public venue** (`venue: binanceus`): combined depth/trade/kline WebSocket with
+  snapshot-bridged depth sync and gap detection, venue klines as bars, published 0% maker / 0.02%
+  taker fees. Market-data GETs only; no credentials.
+- **Post-only limit orders** (`limit-trade-through-v1`): fills only when a trade prints through the
+  limit (up to its size) or the book moves through it; touches never fill; maker fee.
+- **Brackets** (`src/paper/bracket.ts`): limit entry, resting take-profit, engine-side stop and
+  max-hold market exits; one bracket at a time; persisted and replayed exactly.
+- `capitulation` strategy (drop on a volume spike, then a green bar), matching the research signal
+  bar for bar, and `config/trading.paper.binanceus-capitulation.yaml` for forward testing.
+
+### Fixed
+
+- A partially filled resting limit can now expire (its fill stands, the rest is released).
+
 ## 0.3.1 (2026-10-31): logo and README
 
 ### Added

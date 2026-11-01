@@ -90,6 +90,8 @@ export class ScriptedStrategy implements StrategyPort {
   target: number | 'hold' = 'hold';
   /** Intent time-to-live relative to the snapshot time (negative = already expired). */
   ttlMs = 60_000;
+  /** Optional bracket spec attached to target intents. */
+  bracket: import('../../src/paper/domain').BracketSpec | undefined = undefined;
   calls: StrategyInput[] = [];
   decideSync(input: StrategyInput): StrategyResult {
     this.calls.push(input);
@@ -103,6 +105,7 @@ export class ScriptedStrategy implements StrategyPort {
             targetWeight: this.target.toFixed(6),
             validUntil: input.asOf + this.ttlMs,
             rationale: 'scripted',
+            bracket: this.bracket,
           };
     return { outcome: 'ok', intent };
   }
@@ -131,6 +134,8 @@ export interface Harness {
   advance: (ms: number) => void;
   /** Complete the current 5-minute bar (trades + clock past end+grace), triggering a decision. */
   completeBar: (price?: string) => void;
+  /** Venue-published closed bar (Binance.US klines), triggering a decision. */
+  venueBar: (close?: string) => void;
 }
 
 export function harness(
@@ -198,6 +203,11 @@ export function harness(
     },
     advance: (ms) => {
       h.t += ms;
+    },
+    venueBar: (close = '80000') => {
+      const start = Math.floor(h.t / 300_000) * 300_000;
+      h.t = start + 300_500;
+      h.ev({ kind: 'bar', candle: { start, open: close, high: close, low: close, close, volume: '1' } } as MarketEvent);
     },
     completeBar: (price = '80000') => {
       const barStart = Math.floor(h.t / 300_000) * 300_000;

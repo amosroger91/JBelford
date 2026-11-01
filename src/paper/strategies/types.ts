@@ -50,14 +50,23 @@ export class DeterministicStrategy implements StrategyPort {
     const w = Math.max(0, Math.min(1, out.target));
     return {
       outcome: 'ok',
-      intent: {
-        decisionId: `d-${input.asOf}`,
-        snapshotId: input.snapshotId,
-        action: 'target',
-        targetWeight: w.toFixed(6),
-        validUntil: input.asOf + this.intentTtlMs,
-        rationale: out.reason,
-      },
+      intent: out.hold
+        ? {
+            decisionId: `d-${input.asOf}`,
+            snapshotId: input.snapshotId,
+            action: 'hold',
+            validUntil: input.asOf + this.intentTtlMs,
+            rationale: out.reason,
+          }
+        : {
+            decisionId: `d-${input.asOf}`,
+            snapshotId: input.snapshotId,
+            action: 'target',
+            targetWeight: w.toFixed(6),
+            validUntil: input.asOf + this.intentTtlMs,
+            rationale: out.reason,
+            bracket: out.bracket,
+          },
     };
   }
 

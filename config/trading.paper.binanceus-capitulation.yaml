@@ -1,0 +1,70 @@
+# Forward paper test of the research batch-03 capitulation candidate on Binance.US public data.
+# PAPER ONLY: simulated funds and orders. Parameters are frozen from the research pick; editing
+# anything below creates a new experiment version.
+mode: paper
+venue: binanceus
+product: BTC-USD
+purpose: Forward paper observation of the batch-03 capitulation candidate (Binance.US, maker brackets)
+initialBalances:
+  usd: '10000'
+  btc: '0'
+strategy:
+  id: capitulation
+  params:
+    lookback: 48
+    dropPct: 3
+    volMult: 5
+    tpPct: 1.5
+    slPct: 3
+    maxHoldBars: 72
+    entryOffsetBps: 0
+    entryValidBars: 6
+decision:
+  barSeconds: 300
+  timeoutMs: 20000
+  intentTtlMs: 60000
+  coalesce: skip
+execution:
+  model: ioc-depth-walk-v1 # market exits; entries/take-profits use limit-trade-through-v1
+  delayMs: 750
+  participation: '0.25'
+  guardBps: 50
+fees:
+  version: binanceus-spot-2026-04-22
+  takerRate: '0.0002'
+  makerRate: '0'
+  source: Binance.US announcement 2026-04-22 (blog.binance.us/zero-fee-trading) - 0% maker, 0.02% taker or lower on all Advanced spot pairs
+  asOf: '2026-10-31'
+  verified: true
+risk:
+  version: paper-risk-v1-bracket
+  maxExposure: '0.20'
+  maxOrderPctEquity: '0.20'
+  dailyLossPausePct: '0.02'
+  drawdownPausePct: '0.05'
+  maxSpreadBps: 10
+  minTouchDepthUsd: '1'
+  maxOrdersPerHour: 12
+  maxOpenOrders: 2
+  minRebalancePctEquity: '0.005'
+  operatingCostBudgetUsd: '0'
+feed:
+  staleMs: 15000
+  maxClockSkewMs: 5000
+  tickMs: 1000
+  reconnectMinMs: 1000
+  reconnectMaxMs: 30000
+recording:
+  dir: data/paper/recordings
+  segmentSeconds: 300
+storage:
+  db: state/paper/trading.db
+readiness:
+  version: paper-qualification-v1
+  minDays: 60
+  minRoundTrips: 100
+  minCoveragePct: 95
+  minContinuousHours: 24
+  bootstrapBlockDays: 5
+  bootstrapSamples: 2000
+  confidence: 0.95

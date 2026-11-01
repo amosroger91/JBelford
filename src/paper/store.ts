@@ -201,6 +201,31 @@ const MIGRATIONS: string[] = [
   `
   CREATE TABLE runtime_status (session_id TEXT PRIMARY KEY, json TEXT NOT NULL, updated_at INTEGER NOT NULL);
   `,
+  `
+  ALTER TABLE orders ADD COLUMN order_type TEXT NOT NULL DEFAULT 'market';
+  ALTER TABLE orders ADD COLUMN limit_price TEXT;
+  ALTER TABLE orders ADD COLUMN post_only INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE orders ADD COLUMN activated_at INTEGER;
+  CREATE TABLE brackets (
+    session_id TEXT NOT NULL,
+    bracket_id TEXT NOT NULL,
+    entry_order_id TEXT NOT NULL,
+    tp_pct TEXT NOT NULL,
+    sl_pct TEXT NOT NULL,
+    max_hold_ms INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    entry_price TEXT,
+    qty TEXT NOT NULL DEFAULT '0',
+    tp_price TEXT,
+    stop_price TEXT,
+    tp_order_id TEXT,
+    exit_order_id TEXT,
+    opened_at INTEGER,
+    closed_at INTEGER,
+    exit_reason TEXT,
+    PRIMARY KEY (session_id, bracket_id)
+  );
+  `,
 ];
 
 export type Row = Record<string, unknown>;

@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { configHash, parsePaperConfig, strategyVersionHash, type PaperConfig } from './config';
 import type { ControlAction, MarketEvent } from './domain';
 import { CoinbaseLiveSource, fetchCandles, fetchProduct, productRestrictions, type ProductMeta } from './market/coinbase';
+import { BinanceUsLiveSource, fetchBinanceUsCandles, fetchBinanceUsProduct } from './market/binanceus';
 import { Recorder, readDataset } from './market/recorder';
 import { dec } from './money';
 import { PaperRuntime, type RuntimeStatus } from './runtime';
@@ -238,7 +239,7 @@ export async function runForward(o: ForwardOptions): Promise<{ sessionId: string
     const problems = svc.ledger.verify(sessionId);
     if (problems.length) throw new Error(`ledger invariants failed; refusing to resume: ${problems.join('; ')}`);
   } else {
-    product = await fetchProduct();
+    product = cfg.venue === 'binanceus' ? await fetchBinanceUsProduct() : await fetchProduct();
     const r = productRestrictions(product);
     if (r.length) throw new Error(`BTC-USD not usable for simulated market orders: ${r.join(', ')}`);
     sessionId = svc.createSession(cfg, product, { kind: 'forward' });
@@ -256,11 +257,10 @@ export async function runForward(o: ForwardOptions): Promise<{ sessionId: string
     pollControls: true,
     leaseOwner: owner,
   });
-  const source = new CoinbaseLiveSource({
-    tickMs: cfg.feed.tickMs,
-    reconnectMinMs: cfg.feed.reconnectMinMs,
-    reconnectMaxMs: cfg.feed.reconnectMaxMs,
-  });
+  const sourceOpts = { tickMs: cfg.feed.tickMs, reconnectMinMs: cfg.feed.reconnectMinMs, reconnectMaxMs: cfg.feed.reconnectMaxMs };
+  // Binance.US BTC/USD prints a trade roughly every 13s; book diffs (100ms) carry liveness, so allow a longer silence.
+  const source =
+    cfg.venue === 'binanceus' ? new BinanceUsLiveSource({ ...sourceOpts, silenceMs: 60_000 }) : new CoinbaseLiveSource(sourceOpts);
   source.onRaw = (raw, t, epoch) => recorder.appendRaw(raw, t, epoch);
 
   const ctrl = new AbortController();
@@ -301,7 +301,10 @@ export async function runForward(o: ForwardOptions): Promise<{ sessionId: string
   try {
     const warm = Math.max(strategy.warmupBars + 20, 60) * 300;
     const nowSec = Math.floor(Date.now() / 1000);
-    const candles = await fetchCandles(nowSec - warm, nowSec, 300);
+    const candles =
+      cfg.venue === 'binanceus'
+        ? await fetchBinanceUsCandles((nowSec - warm) * 1000, nowSec * 1000)
+        : await fetchCandles(nowSec - warm, nowSec, 300);
     runtime.ingest({ kind: 'warmup_candles', ordinal: 0, receiptTime: Date.now(), granularitySec: 300, candles });
   } catch (e) {
     store.audit(sessionId, Date.now(), 0, 'warmup_failed', { error: String(e) });

@@ -19,7 +19,7 @@ export function canonicalJournal(store: TradingStore, sessionId: string) {
     risk: q('SELECT decision_id, check_name, passed, detail, time, event_ordinal FROM risk_events WHERE session_id = ? ORDER BY id'),
     orders: q(
       `SELECT order_id, decision_id, side, purpose, qty, filled_qty, notional, fees, guard_price, reserved, reserved_remaining, status,
-        submitted_at, arrival_at, valid_until, policy_version, snapshot_id, reject_reason FROM orders WHERE session_id = ? ORDER BY submitted_at, order_id`,
+        submitted_at, arrival_at, valid_until, policy_version, snapshot_id, reject_reason, order_type, limit_price, post_only FROM orders WHERE session_id = ? ORDER BY submitted_at, order_id`,
     ),
     fills: q(
       'SELECT fill_id, order_id, side, price, qty, fee, time, event_ordinal FROM fills WHERE session_id = ? ORDER BY event_ordinal, fill_id',
@@ -29,6 +29,9 @@ export function canonicalJournal(store: TradingStore, sessionId: string) {
     ),
     valuations: q(
       'SELECT time, event_ordinal, mark_bid, mark_mid, equity_mid, equity_bid, liquidation_value, stale FROM valuations WHERE session_id = ? ORDER BY id',
+    ),
+    brackets: q(
+      'SELECT bracket_id, entry_order_id, tp_pct, sl_pct, max_hold_ms, status, entry_price, qty, tp_price, stop_price, tp_order_id, exit_order_id, opened_at, closed_at, exit_reason FROM brackets WHERE session_id = ? ORDER BY bracket_id',
     ),
     balances: store.get(
       'SELECT usd_available, usd_reserved, btc_available, btc_reserved, btc_cost_basis, realized_pnl, fees_paid FROM balances WHERE session_id = ?',

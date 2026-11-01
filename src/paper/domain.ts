@@ -22,7 +22,8 @@ export const SESSION_TRANSITIONS: Record<SessionStatus, SessionStatus[]> = {
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   submitted: ['accepted', 'rejected', 'expired', 'cancelled'],
   accepted: ['partially_filled', 'filled', 'cancel_pending', 'cancelled', 'expired', 'rejected'],
-  partially_filled: ['partially_filled', 'filled', 'cancel_pending', 'cancelled'],
+  // A resting limit's unfilled remainder can expire (good-till-date); the filled part stands.
+  partially_filled: ['partially_filled', 'filled', 'cancel_pending', 'cancelled', 'expired'],
   cancel_pending: ['cancelled', 'filled', 'partially_filled'],
   filled: [],
   cancelled: [],
@@ -91,6 +92,8 @@ export type MarketEvent =
     }
   | { kind: 'seq_gap'; ordinal: number; epoch: number; receiptTime: number; expected: number; got: number }
   | { kind: 'tick'; ordinal: number; receiptTime: number }
+  /** A completed bar published by the venue itself (e.g. a closed 5m kline). */
+  | { kind: 'bar'; ordinal: number; receiptTime: number; candle: Candle }
   | { kind: 'warmup_candles'; ordinal: number; receiptTime: number; granularitySec: number; candles: Candle[] }
   | { kind: 'decision_ready'; ordinal: number; receiptTime: number; decision: RecordedDecision }
   | { kind: 'control'; ordinal: number; receiptTime: number; action: ControlAction; requestId: string }
@@ -110,6 +113,18 @@ export interface Candle {
   volume: string;
 }
 
+/** Bracket exits requested by a strategy; deterministic code sizes and places every order. */
+export interface BracketSpec {
+  /** Post-only limit entry this many bps below the best bid. */
+  entryOffsetBps: number;
+  /** Unfilled entry remainder expires after this long. */
+  entryValidMs: number;
+  /** Take-profit and stop distances in percent of the average entry price (decimal strings). */
+  tpPct: string;
+  slPct: string;
+  maxHoldMs: number;
+}
+
 export interface TradeIntent {
   decisionId: string;
   snapshotId: string;
@@ -118,6 +133,8 @@ export interface TradeIntent {
   targetWeight?: string;
   validUntil: number;
   rationale: string;
+  /** Optional bracket: limit entry + take-profit/stop/max-hold managed by deterministic code. */
+  bracket?: BracketSpec;
 }
 
 /** A decision as recorded in the event stream; replay applies these verbatim. */
@@ -183,7 +200,11 @@ export interface ApprovedOrder {
   validUntil: number;
   policyVersion: string;
   snapshotId: string;
-  purpose: 'strategy' | 'flatten';
+  purpose: 'strategy' | 'flatten' | 'take_profit' | 'stop' | 'max_hold';
+  /** Market IOC (default) or a resting post-only limit order. */
+  orderType?: 'market' | 'limit';
+  limitPrice?: string;
+  postOnly?: boolean;
 }
 
 export interface FillRecord {
@@ -195,7 +216,7 @@ export interface FillRecord {
   qty: string;
   /** USD fee. */
   fee: string;
-  liquidity: 'taker';
+  liquidity: 'taker' | 'maker';
   eventOrdinal: number;
   time: number;
 }

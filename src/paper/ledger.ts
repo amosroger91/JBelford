@@ -140,8 +140,8 @@ export class Ledger {
       if (o.side === 'sell' && reserved > b.btcAvailable) throw new LedgerError('insufficient available BTC for reservation');
       this.s.run(
         `INSERT INTO orders (order_id, client_order_id, session_id, decision_id, side, purpose, qty, guard_price, reserved, reserved_remaining,
-          status, submitted_at, arrival_at, valid_until, policy_version, snapshot_id, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?, ?, ?, ?, ?)`,
+          status, submitted_at, arrival_at, valid_until, policy_version, snapshot_id, updated_at, order_type, limit_price, post_only)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         o.orderId,
         o.clientOrderId,
         o.sessionId,
@@ -158,6 +158,9 @@ export class Ledger {
         o.policyVersion,
         o.snapshotId,
         o.submittedAt,
+        o.orderType ?? 'market',
+        o.limitPrice ?? null,
+        o.postOnly ? 1 : 0,
       );
       this.s.fault('submit:after-insert');
       this.post(
@@ -195,6 +198,10 @@ export class Ledger {
       arrivalAt: r.arrival_at as number,
       validUntil: r.valid_until as number,
       rejectReason: (r.reject_reason as string | null) ?? null,
+      orderType: ((r.order_type as string | undefined) ?? 'market') as 'market' | 'limit',
+      limitPrice: r.limit_price ? dec(r.limit_price as string) : null,
+      postOnly: Boolean(r.post_only),
+      activatedAt: (r.activated_at as number | null) ?? null,
     };
   }
 

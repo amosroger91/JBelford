@@ -16,6 +16,7 @@ export const STRATEGY_IDS = [
   'donchianBreakout',
   'rsiReversion',
   'sessionMomentum',
+  'capitulation',
   'llm',
 ] as const;
 export type StrategyId = (typeof STRATEGY_IDS)[number];
@@ -24,7 +25,7 @@ export const PaperConfigSchema = z
   .object({
     /** Only "paper" exists in this release. Anything else is rejected before parsing the rest. */
     mode: z.literal('paper'),
-    venue: z.literal('coinbase'),
+    venue: z.enum(['coinbase', 'binanceus']),
     product: z.literal('BTC-USD'),
     purpose: z.string().min(3),
     initialBalances: z.object({ usd: decStr, btc: decStr }).strict(),

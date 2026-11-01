@@ -15,6 +15,8 @@ const ALLOWED: { method: 'GET'; host: string; path: RegExp }[] = [
 ];
 
 export const PUBLIC_WS_URL = 'wss://advanced-trade-ws.coinbase.com';
+/** Every public WebSocket the paper subsystem may open (exact URLs). */
+const ALLOWED_WS = new Set([PUBLIC_WS_URL, 'wss://stream.binance.us:9443/stream?streams=btcusd@depth@100ms/btcusd@trade/btcusd@kline_5m']);
 
 export class NetworkPolicyError extends Error {
   override name = 'NetworkPolicyError';
@@ -32,7 +34,7 @@ export function checkRequest(method: string, url: string): void {
 }
 
 export function checkWebSocket(url: string): void {
-  const ok = url === PUBLIC_WS_URL;
+  const ok = ALLOWED_WS.has(url);
   networkLog.push({ method: 'WS', url, allowed: ok, authenticated: false });
   if (!ok) throw new NetworkPolicyError(`paper mode blocks WebSocket ${url}`);
 }

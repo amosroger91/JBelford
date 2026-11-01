@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-0.3.1-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-0.4.0-blue">
   <img alt="tests" src="https://img.shields.io/badge/tests-119%20passing-brightgreen">
   <img alt="mode" src="https://img.shields.io/badge/mode-paper%20only-orange">
   <img alt="live" src="https://img.shields.io/badge/live%20trading-disabled-red">
@@ -297,6 +297,7 @@ docs/            setup, validation research, live procedure, supervisor rules, c
 
 | Version | Highlights                                                                                                                                                                         |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.4.0   | Event-sourced paper subsystem (`paper ...`): exact-money ledger, replay, readiness; profitability research; Binance.US venue, post-only limits and brackets                        |
 | 0.3.1   | Logo, README rewrite                                                                                                                                                               |
 | 0.3.0   | Intraday redesign: pluggable strategies, VWAP reversion, volatility breakout, time-of-day filter, random-entry test, promotion gate, market-context APIs and price-divergence veto |
 | 0.2.0   | Overfitting diagnostics: PBO and Probabilistic/Deflated Sharpe                                                                                                                     |

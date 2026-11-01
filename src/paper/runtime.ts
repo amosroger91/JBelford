@@ -9,6 +9,7 @@ import type { ProductMeta } from './market/coinbase';
 import type { Recorder } from './market/recorder';
 import { ONE, ZERO, dec, div, mul, str, type Dec } from './money';
 import { evaluateIntent } from './risk';
+import { BracketManager } from './bracket';
 import type { TradingStore } from './store';
 import type { StrategyInput, StrategyPort } from './strategies/types';
 
@@ -57,6 +58,7 @@ export class PaperRuntime {
   readonly ledger: Ledger;
   readonly book = new OrderBook();
   readonly bars = new BarBuilder();
+  private readonly brackets: BracketManager;
   private readonly broker: PaperBroker;
   private status: SessionStatus;
   private feed: FeedHealth = 'connecting';
@@ -93,11 +95,13 @@ export class PaperRuntime {
     this.lastTime = (s.last_event_time as number | null) ?? 0;
     this.broker = new PaperBroker({
       takerRate: dec(cfg.fees.takerRate),
+      makerRate: dec(cfg.fees.makerRate),
       participation: dec(cfg.execution.participation),
       guardBps: cfg.execution.guardBps,
       baseIncrement: dec(product.base_increment),
       baseMinSize: dec(product.base_min_size),
     });
+    this.brackets = new BracketManager(store, this.ledger, cfg, product, sessionId);
     const held = this.ledger.balances(sessionId);
     if (held.btcAvailable + held.btcReserved > ZERO) {
       const firstBuy = store.get("SELECT MIN(time) AS t FROM fills WHERE session_id = ? AND side = 'buy'", sessionId);
@@ -241,8 +245,16 @@ export class PaperRuntime {
       case 'trade':
         this.lastMsgTime = e.receiptTime;
         this.lastTrade = e.price;
-        this.bars.onTrade(e.tradeId, e.price, e.size, e.exchangeTime);
+        // Coinbase bars are built from trades; Binance.US bars come from the venue's closed klines.
+        if (this.cfg.venue === 'coinbase') this.bars.onTrade(e.tradeId, e.price, e.size, e.exchangeTime);
+        this.fillLimitsFromTrade(dec(e.price), dec(e.size), e.receiptTime, e.ordinal);
         break;
+      case 'bar': {
+        const before = this.bars.lastCompletedStart();
+        this.bars.seed([e.candle]);
+        if (this.bars.lastCompletedStart() !== before) this.onBarCompleted(e.candle.start, e.receiptTime, e.ordinal);
+        break;
+      }
       case 'heartbeat':
         this.lastMsgTime = e.receiptTime;
         if (Math.abs(e.receiptTime - e.exchangeTime) > this.cfg.feed.maxClockSkewMs && this.feed === 'healthy') {
@@ -269,7 +281,13 @@ export class PaperRuntime {
         this.onLifecycle(e.state, e.receiptTime, e.ordinal, e.detail);
         break;
     }
-    if (e.kind === 'book_snapshot' || e.kind === 'book_update' || e.kind === 'tick') this.executeDue(e.receiptTime, e.ordinal);
+    if (e.kind === 'book_snapshot' || e.kind === 'book_update' || e.kind === 'tick') {
+      this.fillLimitsFromBook(e.receiptTime, e.ordinal);
+      this.executeDue(e.receiptTime, e.ordinal);
+    }
+    if (e.kind === 'book_snapshot' || e.kind === 'book_update' || e.kind === 'tick' || e.kind === 'trade' || e.kind === 'control') {
+      this.brackets.manage(this.book, e.receiptTime, e.ordinal, this.status === 'running' && this.feed === 'healthy' && this.book.synced);
+    }
     if (e.kind === 'trade' || e.kind === 'tick' || e.kind === 'book_update') {
       for (const bar of this.bars.advance(e.receiptTime)) this.onBarCompleted(bar.start, e.receiptTime, e.ordinal);
     }
@@ -328,6 +346,9 @@ export class PaperRuntime {
     if (state === 'stopping') {
       this.stopRequested = true;
       this.valuation(time, ordinal); // closing mark is part of the recorded stream, so replay reproduces it
+      // The process stops observing the market here. Anything recorded later (an offline control)
+      // must see no book, in the original run and in replay alike.
+      this.invalidateBook('disconnected', time, 'runtime stopping');
     }
   }
 
@@ -507,6 +528,10 @@ export class PaperRuntime {
       this.riskEvent(d.decisionId, 'lifecycle', false, `session ${this.status}: decision ignored`, time, ordinal);
       return;
     }
+    if (d.intent?.bracket && this.brackets.active().length > 0) {
+      this.riskEvent(d.decisionId, 'bracket', false, 'a bracket is already open (one position at a time)', time, ordinal);
+      return;
+    }
     const b = this.ledger.balances(this.sessionId);
     const open = this.ledger.openOrders(this.sessionId);
     const mid = this.book.midpoint();
@@ -554,7 +579,8 @@ export class PaperRuntime {
     }
     const orderId = `o-${d.decisionId}`;
     try {
-      this.ledger.submit({ ...res.order, orderId, clientOrderId: `${this.sessionId}:${d.decisionId}` }, ordinal);
+      if (d.intent?.bracket) this.brackets.submitEntry(res.order, d.intent.bracket, this.book, time, ordinal);
+      else this.ledger.submit({ ...res.order, orderId, clientOrderId: `${this.sessionId}:${d.decisionId}` }, ordinal);
     } catch (err) {
       this.riskEvent(d.decisionId, 'submit', false, String(err), time, ordinal);
     }
@@ -586,6 +612,48 @@ export class PaperRuntime {
   // ---------- execution ----------
 
   /** Execute IOC orders whose simulated arrival time has passed, against the current healthy book. */
+  /** Resting post-only limits that are live at the venue (activated after arrival). */
+  private restingLimits() {
+    return this.ledger.openOrders(this.sessionId).filter((o) => o.orderType === 'limit' && o.activatedAt !== null && o.limitPrice !== null);
+  }
+
+  private fillLimit(o: ReturnType<PaperRuntime['restingLimits']>[number], fill: import('./domain').FillRecord | null): void {
+    if (!fill) return;
+    this.o.recorder?.flush();
+    this.ledger.applyFill(fill);
+    const b = this.ledger.balances(this.sessionId);
+    const held = b.btcAvailable + b.btcReserved;
+    if (held === ZERO) this.positionSince = null;
+    else if (this.positionSince === null) this.positionSince = fill.time;
+    void o;
+  }
+
+  private restingInput(o: ReturnType<PaperRuntime['restingLimits']>[number], time: number, ordinal: number) {
+    const priorFills =
+      (this.store.get('SELECT COUNT(*) AS n FROM fills WHERE session_id = ? AND order_id = ?', this.sessionId, o.orderId)!.n as number) ??
+      0;
+    return {
+      orderId: o.orderId,
+      sessionId: this.sessionId,
+      side: o.side,
+      limit: o.limitPrice!,
+      remaining: o.qty - o.filledQty,
+      priorFills,
+      time,
+      ordinal,
+    };
+  }
+
+  private fillLimitsFromTrade(price: Dec, size: Dec, time: number, ordinal: number): void {
+    if (this.feed !== 'healthy') return; // never fill on data we do not trust
+    for (const o of this.restingLimits()) this.fillLimit(o, this.broker.onTradeForLimit(this.restingInput(o, time, ordinal), price, size));
+  }
+
+  private fillLimitsFromBook(time: number, ordinal: number): void {
+    if (this.feed !== 'healthy' || !this.book.synced) return;
+    for (const o of this.restingLimits()) this.fillLimit(o, this.broker.onBookForLimit(this.book, this.restingInput(o, time, ordinal)));
+  }
+
   private executeDue(time: number, ordinal: number): void {
     for (const o of this.ledger.openOrders(this.sessionId)) {
       if (time > o.validUntil) {
@@ -601,6 +669,13 @@ export class PaperRuntime {
       }
       if (time < o.arrivalAt || o.status !== 'accepted') continue;
       if (this.feed !== 'healthy' || !this.book.synced) continue; // wait for healthy data; never fill in an outage
+      if (o.orderType === 'limit') {
+        if (o.activatedAt !== null) continue;
+        const violation = this.broker.postOnlyViolation(this.book, o.side, o.limitPrice!);
+        if (violation) this.ledger.close(this.sessionId, o.orderId, 'rejected', time, ordinal, violation);
+        else this.store.run('UPDATE orders SET activated_at = ? WHERE session_id = ? AND order_id = ?', time, this.sessionId, o.orderId);
+        continue;
+      }
       const touch = o.side === 'buy' ? this.book.bestAsk() : this.book.bestBid();
       const bid = this.book.bestBid();
       const ask = this.book.bestAsk();

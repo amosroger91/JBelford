@@ -71,3 +71,20 @@ It would also need a decision on whether Binance.US is an acceptable venue (elig
 regulatory history are the owner's call).
 
 The candidate's parameters: `artifacts/research/batch-03/bracket.json` → `perFamily[capitulation].pick`.
+
+## Forward paper test (started 2026-11-01)
+
+Built: the Binance.US public adapter, post-only limits with trade-through fills, and brackets
+(`config/trading.paper.binanceus-capitulation.yaml`).
+
+First bounded run, `ps-20261101-2db8bff4`:
+
+- 30 minutes, 4,702 events, 0 reconnects, feed healthy throughout.
+- 6 decisions, **0 trades.** The signal fires about 3 times a month, so this is expected.
+- Replay matched the canonical journal hash exactly.
+- Verdicts: operational correctness = pass, strategy evidence = `insufficient_evidence`.
+
+**Status: not profitable yet.** There's no forward evidence either way.
+
+At about 3 signals a month, reaching the 15+ trades the protocol requires takes roughly 5 months of
+continuous forward data.
