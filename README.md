@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-0.5.0-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-0.5.1-blue">
   <img alt="tests" src="https://img.shields.io/badge/tests-119%20passing-brightgreen">
   <img alt="mode" src="https://img.shields.io/badge/mode-paper%20only-orange">
   <img alt="live" src="https://img.shields.io/badge/live%20trading-disabled-red">
@@ -297,6 +297,7 @@ docs/            setup, validation research, live procedure, supervisor rules, c
 
 | Version | Highlights                                                                                                                                                                         |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.5.1   | Kalshi K-02 risk rules: New York-morning blackout and 95c favorite cap (`config/kalshi.k02.yaml`); first live run results                                                          |
 | 0.5.0   | Kalshi paper test (`kalshi ...`): maker bids on the favorite side in 15-minute commodity markets, queue-conservative fills, replay                                                 |
 | 0.4.0   | Event-sourced paper subsystem (`paper ...`): exact-money ledger, replay, readiness; profitability research; Binance.US venue, post-only limits and brackets                        |
 | 0.3.1   | Logo, README rewrite                                                                                                                                                               |

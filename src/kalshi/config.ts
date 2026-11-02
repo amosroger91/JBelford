@@ -17,6 +17,17 @@ export const KalshiConfigSchema = z
     bankrollUsd: z.number().positive().max(1_000_000),
     /** Join the favorite side only when its best bid is at least this (longshot <= 1 - this). */
     minFavoriteBid: z.number().min(0.5).max(0.999),
+    /** K-02 rule R2: skip favorites priced above this (they risk ~97c to earn ~1-2c). Unset = no cap. */
+    maxFavoriteBid: z.number().min(0.5).max(0.9999).optional(),
+    /**
+     * K-02 rule R1: no resting orders from startHour (inclusive) to endHour (exclusive),
+     * America/New_York time (US commodity open and scheduled data releases). Unset = none.
+     */
+    blackoutEt: z
+      .object({ startHour: z.number().int().min(0).max(23), endHour: z.number().int().min(1).max(24) })
+      .strict()
+      .refine((b) => b.endHour > b.startHour, 'endHour must be after startHour')
+      .optional(),
     maxCollateralPerMarketUsd: z.number().positive(),
     orderContracts: z.number().int().min(1).max(10_000),
     /** Stop posting this many seconds before a market closes (0 = post until close). */

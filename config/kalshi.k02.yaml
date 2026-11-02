@@ -1,0 +1,28 @@
+# Kalshi paper test K-02: candidate A plus two risk rules chosen on the Jun-Aug research half
+# (scratch analysis k02_buckets / k02_sim), held-out check on Sep-Oct. Frozen; changing it is a new experiment.
+# PAPER ONLY: public market data, simulated cash and fills. No account, no API keys, no orders sent.
+mode: paper
+purpose: forward paper test of K-02 (candidate A + no 8-12 ET + favorites <= 95c)
+series:
+  - KXGOLD15M
+  - KXSILVER15M
+  - KXCOPPER15M
+  - KXPLATINUM15M
+  - KXPALLADIUM15M
+  - KXWTI15M
+  - KXBRENT15M
+  - KXNATGAS15M
+  - KXCOFFEE15M
+bankrollUsd: 50
+minFavoriteBid: 0.80 # research: takers buying longshots at <= 20c
+maxFavoriteBid: 0.95 # R2: favorites above 95c risk ~97c to earn ~1-2c
+blackoutEt: # R1: 8:00-11:59 America/New_York had ~0 edge in both halves
+  startHour: 8
+  endHour: 12
+maxCollateralPerMarketUsd: 10
+orderContracts: 10
+stopPostingSecondsBeforeClose: 0 # research included trades up to the close
+pollMs: 3000
+marketsRefreshMs: 15000
+settleWaitMs: 1800000
+recordingDir: data/kalshi

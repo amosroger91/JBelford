@@ -1,6 +1,6 @@
 {
   "name": "jbelford",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Intraday BTC/USD spot research, backtesting and paper-trading system (paper by default).",
   "scripts": {
     "typecheck": "tsc --noEmit",

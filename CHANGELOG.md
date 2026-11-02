@@ -2,6 +2,20 @@
 
 All notable changes to this project are recorded here (plus full history in git).
 
+## 0.5.1 (2026-11-02): Kalshi K-02 risk rules
+
+### Added
+
+- Kalshi config options `maxFavoriteBid` (skip favorites above a price) and `blackoutEt` (no resting
+  orders in given America/New_York hours; a resting order is cancelled when the window starts).
+  Both are off unless set, so older recordings replay unchanged.
+- `config/kalshi.k02.yaml`: candidate A with no orders from 8:00 to 11:59 New York time and
+  favorites capped at 95c. The rules were chosen on the June-August research half and checked on
+  September-October.
+- `docs/KALSHI_PAPER.md`: results of the first two live paper runs (+$48.24 and about -$37 on $50),
+  the K-02 analysis, and a correction: the earlier $28-51 simulation included daily, weekly and
+  monthly commodity markets.
+
 ## 0.5.0 (2026-11-02): Kalshi paper test
 
 ### Added

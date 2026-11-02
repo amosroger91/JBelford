@@ -92,6 +92,15 @@ export interface OrderEventRow {
   reason: string;
 }
 
+const nyHour = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' });
+
+/** True when `t` falls in the configured America/New_York blackout hours (DST-aware). */
+export function inBlackout(cfg: Pick<KalshiConfig, 'blackoutEt'>, t: number): boolean {
+  if (!cfg.blackoutEt) return false;
+  const h = Number(nyHour.format(t));
+  return h >= cfg.blackoutEt.startHour && h < cfg.blackoutEt.endHour;
+}
+
 export class KalshiPaperEngine {
   cash: number;
   private readonly markets = new Map<string, MarketInfo>();
@@ -180,19 +189,22 @@ export class KalshiPaperEngine {
     const yes = best(e.yes);
     const no = best(e.no);
     const minFav = Math.round(this.cfg.minFavoriteBid * UNIT);
+    const maxFav = this.cfg.maxFavoriteBid === undefined ? UNIT - 1 : Math.round(this.cfg.maxFavoriteBid * UNIT);
     let fav: { side: Side; price: number } | null = null;
-    if (yes && yes[0] >= minFav && yes[0] < UNIT) fav = { side: 'yes', price: yes[0] };
-    else if (no && no[0] >= minFav && no[0] < UNIT) fav = { side: 'no', price: no[0] };
+    if (yes && yes[0] >= minFav && yes[0] <= maxFav) fav = { side: 'yes', price: yes[0] };
+    else if (no && no[0] >= minFav && no[0] <= maxFav) fav = { side: 'no', price: no[0] };
     const levelSize = (side: Side, price: number) => (side === 'yes' ? e.yes : e.no).find((x) => x[0] === price)?.[1] ?? 0;
+    const blackout = inBlackout(this.cfg, e.t);
 
     if (existing) {
       // Others' displayed size at our level bounds how much can still be queued ahead of us.
       existing.queueAhead = Math.min(existing.queueAhead, levelSize(existing.side, existing.price));
+      if (blackout) return this.cancel(existing, e.t, 'blackout window (America/New_York)');
       if (!fav || fav.side !== existing.side) return this.cancel(existing, e.t, 'no longer a favorite-side quote');
       if (fav.price !== existing.price && existing.filled === 0) this.cancel(existing, e.t, 're-quote to the new best bid');
       else return;
     }
-    if (this.stopped || !m || m.status !== 'active' || !fav) return;
+    if (this.stopped || blackout || !m || m.status !== 'active' || !fav) return;
     if (e.t >= m.closeTime - this.cfg.stopPostingSecondsBeforeClose * 1000) return;
     const pos = this.positions.get(e.ticker);
     if (pos && pos.side !== fav.side) return; // never hold both sides of one market

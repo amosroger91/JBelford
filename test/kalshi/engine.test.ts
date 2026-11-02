@@ -243,3 +243,33 @@ describe('Kalshi live loop (stubbed public API) and replay', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+describe('Kalshi paper engine: K-02 risk rules', () => {
+  it('R2 skips favorites priced above maxFavoriteBid', () => {
+    const e = new KalshiPaperEngine(cfgOf({ maxFavoriteBid: 0.95 }));
+    e.ingest({ kind: 'markets', t: T0, markets: [market()] });
+    e.ingest(book(T0 + 1000, [[0.97, 50]], [[0.02, 50]]));
+    expect(e.openOrders()).toEqual([]);
+    e.ingest(book(T0 + 2000, [[0.95, 50]], [[0.04, 50]]));
+    expect(e.openOrders()).toEqual([expect.objectContaining({ side: 'yes', price: u(0.95) })]);
+  });
+  it('R1 posts nothing in the New York blackout hours and cancels a resting order when it starts (DST-aware)', () => {
+    // T0 is 00:00 EST; a 0-1 ET blackout covers it, a 1-2 ET blackout does not.
+    const off = engineWithOrder({ blackoutEt: { startHour: 1, endHour: 2 } });
+    expect(off.openOrders()).toHaveLength(1);
+    const on = engineWithOrder({ blackoutEt: { startHour: 0, endHour: 1 } });
+    expect(on.openOrders()).toEqual([]);
+    // Order rests at 00:59 EST, blackout 1-2 ET begins at 06:00 UTC: next book cancels it.
+    const e = new KalshiPaperEngine(cfgOf({ blackoutEt: { startHour: 1, endHour: 2 } }));
+    const late = T0 + 59 * 60_000;
+    e.ingest({ kind: 'markets', t: late, markets: [market({ closeTime: late + 15 * 60_000 })] });
+    e.ingest(book(late, [[0.9, 5]], [[0.05, 5]]));
+    expect(e.openOrders()).toHaveLength(1);
+    e.ingest(book(late + 61_000, [[0.9, 5]], [[0.05, 5]]));
+    expect(e.openOrders()).toEqual([]);
+    expect(e.orderEvents.at(-1)).toMatchObject({ action: 'cancel', reason: expect.stringContaining('blackout') });
+  });
+  it('rejects an inverted blackout window', () => {
+    expect(() => cfgOf({ blackoutEt: { startHour: 12, endHour: 8 } })).toThrow();
+  });
+});
