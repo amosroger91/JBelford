@@ -1,0 +1,23 @@
+# Kalshi paper test: research candidate A (batch K-01), frozen parameters.
+# PAPER ONLY: public market data, simulated cash and fills. No account, no API keys, no orders sent.
+mode: paper
+purpose: forward paper test of maker bids on the favorite side in 15-minute commodity markets
+series:
+  - KXGOLD15M
+  - KXSILVER15M
+  - KXCOPPER15M
+  - KXPLATINUM15M
+  - KXPALLADIUM15M
+  - KXWTI15M
+  - KXBRENT15M
+  - KXNATGAS15M
+  - KXCOFFEE15M
+bankrollUsd: 50
+minFavoriteBid: 0.80 # research: takers buying longshots at <= 20c
+maxCollateralPerMarketUsd: 10
+orderContracts: 10
+stopPostingSecondsBeforeClose: 0 # research included trades up to the close
+pollMs: 3000
+marketsRefreshMs: 15000
+settleWaitMs: 1800000
+recordingDir: data/kalshi

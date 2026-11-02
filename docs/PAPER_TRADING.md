@@ -3,6 +3,8 @@
 **PAPER — SIMULATED FUNDS.** Real public BTC-USD market data; simulated cash, orders and fills.
 The system requires no exchange credentials and cannot submit real orders.
 
+Kalshi event-contract paper test: [`docs/KALSHI_PAPER.md`](KALSHI_PAPER.md)
+
 Design: [`docs/adr/0001-paper-trading-subsystem.md`](adr/0001-paper-trading-subsystem.md) ·
 plan: [`docs/plans/bitcoin-paper-trading-plan.md`](plans/bitcoin-paper-trading-plan.md)
 

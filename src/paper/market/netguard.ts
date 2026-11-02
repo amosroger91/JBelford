@@ -12,6 +12,12 @@ const ALLOWED: { method: 'GET'; host: string; path: RegExp }[] = [
   { method: 'GET', host: 'api.coinbase.com', path: /^\/api\/v3\/brokerage\/market\/products\/BTC-USD\/candles$/ },
   // Binance.US public market data (research venue; no account endpoints)
   { method: 'GET', host: 'api.binance.us', path: /^\/api\/v3\/(klines|depth|exchangeInfo|ticker\/24hr)$/ },
+  // Kalshi public market data (paper test; never /portfolio, never orders)
+  {
+    method: 'GET',
+    host: 'api.elections.kalshi.com',
+    path: /^\/trade-api\/v2\/(series\/KX[A-Z0-9]+|markets|markets\/trades|markets\/KX[A-Z0-9.-]+|markets\/KX[A-Z0-9.-]+\/orderbook)$/,
+  },
 ];
 
 export const PUBLIC_WS_URL = 'wss://advanced-trade-ws.coinbase.com';

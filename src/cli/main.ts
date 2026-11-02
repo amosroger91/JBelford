@@ -23,6 +23,7 @@ import { Ledger } from '../paper/ledger';
  *   node dist/cli.js paper sessions
  *   node dist/cli.js paper web [--port 8787]
  *   node dist/cli.js paper mcp
+ *   node dist/cli.js kalshi start [--duration 2h] | kalshi report SESSION_ID | kalshi sessions   (Kalshi paper test)
  */
 const USAGE = `usage: jbelford paper <start|resume|status|pause|stop|flatten|replay|report|research|sessions|web|mcp> [args]`;
 
@@ -112,6 +113,10 @@ function replayAndCompare(svc: TradingService, store: TradingStore, sessionId: s
 
 async function main() {
   const [group, cmd, ...rest] = process.argv.slice(2);
+  if (group === 'kalshi' && cmd) {
+    const { kalshiMain } = await import('../kalshi/cli');
+    return kalshiMain(cmd, rest);
+  }
   if (group !== 'paper' || !cmd) {
     console.error(USAGE);
     process.exit(2);

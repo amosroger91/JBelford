@@ -2,6 +2,28 @@
 
 All notable changes to this project are recorded here (plus full history in git).
 
+## 0.5.0 (2026-11-02): Kalshi paper test
+
+### Added
+
+- **Kalshi paper test** (`node dist/cli.js kalshi start|report|sessions`, `src/kalshi/`): forward
+  paper test of research candidate A. In 15-minute commodity markets it joins the best bid on the
+  favorite side (bid of 80c or more), i.e. sells longshots to takers.
+  - Public data only: the network guard allows Kalshi public GETs and refuses `/portfolio`, POSTs
+    and other hosts. No account and no keys.
+  - Queue-conservative fills: our order sits behind the displayed queue. It fills when longshot
+    buyers trade at our level once the queue ahead is used up, or completely when a trade goes
+    through our level.
+  - Every observation is recorded before the engine sees it, and `kalshi report` replays the
+    recording and verifies the result hash.
+  - Frozen parameters in `config/kalshi.paper.yaml`. See `docs/KALSHI_PAPER.md`.
+- Research behind it (batch K-01): 21.3M public Kalshi trades from 24 two-hour windows,
+  June 30 – October 23, 2026, split into discovery and test halves.
+  - **What held up:** only maker-vs-longshot-takers in commodity markets, at about +2.3c per
+    contract out of sample (contract-weighted).
+  - **What didn't:** taking liquidity lost about 1.1c per contract after fees.
+  - **The catch:** a $50 simulation still ended between $28 and $51.
+
 ## 0.4.0 (2026-10-31): paper-trading subsystem, profitability research, Binance.US brackets
 
 ### Added

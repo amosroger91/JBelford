@@ -31,4 +31,5 @@ Intraday (minutes to hours) BTC/USD spot research/paper-trading system. Read `do
 - `src/data/context/` keyless market-context APIs (CoinPaprika, Binance.US, Kraken, Fear & Greed)
 - `src/safety/` kill switch and live gate
 - `src/supervisor/` proposal validation
+- `src/kalshi/` Kalshi paper test (public data only, simulated fills; `node dist/cli.js kalshi ...`)
 - `src/cli/` entry points (see package.json scripts)
